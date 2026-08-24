@@ -31,8 +31,9 @@ export const resgiterUser = async (req, res) => {
         if (password.length <= 6) {
             return res.status(400).json({ message: 'Password length should be greater or Equal to 6' })
         }
-
-        const hashedPassword = bcrypt.hashSync(password , 10)
+           const salt =  await  bcrypt.genSalt(10)
+           console.log(salt)
+        const hashedPassword = await bcrypt.hash(password , salt)
 
 
         const newUser = await User.create({ username, name, password:hashedPassword, email })
