@@ -1,6 +1,7 @@
 
 
-import User from "../models/user.model"
+import User from "../models/user.model.js"
+import bcrypt from 'bcrypt'
 
 export const resgiterUser = async (req, res) => {
     // 
@@ -31,11 +32,13 @@ export const resgiterUser = async (req, res) => {
             return res.status(400).json({ message: 'Password length should be greater or Equal to 6' })
         }
 
+        const hashedPassword = bcrypt.hashSync(password , 10)
 
-        const newUser = User.create({ username, name, password, email })
+
+        const newUser = await User.create({ username, name, password:hashedPassword, email })
 
 
-        res.send(newUser)
+        res.status(200).json(newUser)
 
 
 
@@ -50,6 +53,10 @@ export const resgiterUser = async (req, res) => {
 
     }
     catch {
-
+        res.status(500).json({ message: "Intenal Server Error" })
     }
 }
+
+
+// $2b$10$jvq5q5okClXf7zkVeiuaXOnHRJ6YNqOUpTr/20Vm7APdLbULOmYzS
+"$2b$10$zRf5TaM8B59Vs48D24REGemXND4G6m0aqBMTYGkqAtNwMdewaONI."
