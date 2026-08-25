@@ -102,8 +102,8 @@ export const loginUser = async (req, res) => {
 }
 
 
-export const getUser = ()=>{
-    
+export const getUser = (req , res)=>{
+    res.status(200).json(req.user)
 }
 
 
