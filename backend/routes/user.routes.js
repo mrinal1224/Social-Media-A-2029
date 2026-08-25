@@ -1,5 +1,5 @@
 import express from 'express'
-import {resgiterUser} from '../controllers/user.controllers.js'
+import {resgiterUser , loginUser} from '../controllers/user.controllers.js'
 
 const userRoutes = express.Router()
 
@@ -7,6 +7,7 @@ const userRoutes = express.Router()
 // Resgiter User
 
 userRoutes.post('/register' , resgiterUser)
+userRoutes.post('/login' ,loginUser )
 
 
 // Login User
