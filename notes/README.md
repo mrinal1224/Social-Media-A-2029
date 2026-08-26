@@ -1,23 +1,52 @@
 # Social Media A-2029 — Class-wise Course Notes
 
-These notes reconstruct the learning journey from the actual Git history of this repository and explain not only what was implemented, but why it was implemented, how the request flows through the system, what production-grade improvements should be made, and how to practise the concepts further.
+These notes are organized around the actual **teaching day**, not individual topics. Every calendar day represented in the Git history is treated as one class, and all meaningful commits from that day are grouped into that class.
 
-## How to use these notes
+## How the notes are organized
 
-Read the classes in order. Each class contains:
+```text
+notes/
+├── README.md
+├── Class-01-24-08-2026.md
+└── Class-02-25-08-2026.md
+```
 
-- What we built in the project
-- Why the concept exists
-- The relevant project architecture
-- Code walkthroughs
-- Real-world intuition where useful
+The rule is simple:
+
+> **One teaching day = one class file.**
+
+If a day contains multiple commits, those commits belong to the same class and are explained together as one progression.
+
+## Recovered class progression
+
+| Class | Date | Commits / milestones covered |
+|---|---|---|
+| Class 01 | 24 August 2026 | `salt generation` |
+| Class 02 | 25 August 2026 | `Push JWT` → `push User Decoded` → `feat (Cookies and server auth)` |
+
+The 25 August commits are intentionally combined into **one class**, because they happened on the same teaching day and represent one continuous authentication lesson.
+
+## What each class contains
+
+Each class note is written as a teaching narrative rather than a reference manual. It includes:
+
+- What we built during that class
+- The complete commit progression for the day
+- Why we made each change
+- Before/after folder architecture
+- Every important file and code snippet
+- Line-by-line reasoning where it helps
+- Request/response flow
+- Real-life analogies where they make the idea easier
 - Common mistakes and debugging points
-- Production / industry best practices
+- Production-grade improvements
+- Better practices and engineering trade-offs
 - Interview questions
-- Practice problems
+- Additional implementation exercises
 - Resources for deeper study
+- A final mental model / revision section
 
-## Project architecture
+## Current project architecture
 
 ```text
 Social-Media-A-2029/
@@ -40,72 +69,51 @@ Social-Media-A-2029/
     └── vite-project/
 ```
 
-## Recovered class progression
-
-| Date | Class / milestone | Git milestone |
-|---|---|---|
-| 24 Aug 2026 | Password hashing and salt | `salt generation` |
-| 25 Aug 2026 | JWT generation and verification | `Push JWT` |
-| 25 Aug 2026 | Decoded user and authenticated request flow | `push User Decoded` |
-| 25 Aug 2026 | Cookies and server-side authentication | `feat (Cookies and server auth)` |
-
-The repository currently has the authentication portion of the course represented most clearly in its Git history. The notes therefore focus deeply on this recovered sequence rather than inventing classes that are not represented by the code/history.
-
-## Important note
-
-Some code in the project is intentionally classroom-oriented. The notes explicitly distinguish between **what we wrote in class** and **what I would change in a production system** so that the learner understands both the implementation and the engineering trade-offs.
-
-## Class files
-
-- [Class 01 — Password Hashing, Salt and bcrypt](./01-password-hashing-and-bcrypt.md)
-- [Class 02 — JWT: Tokens, Signing and Verification](./02-jwt-authentication.md)
-- [Class 03 — Decoded User, Middleware and Request Context](./03-auth-middleware-and-decoded-user.md)
-- [Class 04 — Cookies, HttpOnly and Server-side Authentication](./04-cookies-and-server-auth.md)
-- [Architecture — Authentication Request Lifecycle](./05-authentication-architecture.md)
-- [Practice — Authentication Problem Set](./06-practice-problems.md)
-
-## Quick mental model
+## Big-picture authentication flow
 
 ```text
-REGISTER
+REGISTRATION
 Client
   -> POST /users/register
   -> validate input
-  -> check existing user
+  -> check username/email
   -> bcrypt hash password
   -> save user
   -> generate JWT
-  -> send JWT as cookie
+  -> set authentication cookie
 
 LOGIN
 Client
   -> POST /users/login
   -> find user by email
-  -> bcrypt.compare(password, storedHash)
+  -> bcrypt.compare(password, stored hash)
   -> generate JWT
-  -> send JWT as cookie
+  -> set authentication cookie
 
 PROTECTED REQUEST
 Client
   -> GET /users/me
   -> browser sends cookie
   -> cookie-parser exposes req.cookies.token
-  -> middleware verifies JWT
-  -> middleware loads user from DB
+  -> authentication middleware verifies JWT
+  -> middleware loads current user
   -> middleware attaches req.user
-  -> controller sends req.user
+  -> controller responds
 ```
 
-## Security checklist to remember
+## Important distinction
+
+The notes preserve the actual classroom implementation, but they also explicitly call out places where the implementation can be improved for production. This is intentional: learners should understand both **what we wrote** and **why an experienced engineer may change it**.
+
+## Security checklist
 
 - Never store plaintext passwords.
-- Never commit real secrets to Git.
-- Prefer `httpOnly` cookies for browser-based authentication when the architecture supports it.
-- Use `secure: true` over HTTPS in production.
-- Choose `sameSite` deliberately and understand the CSRF implications.
+- Never commit real production secrets.
+- Prefer HttpOnly authentication cookies for appropriate browser architectures.
+- Use Secure cookies over HTTPS in production.
+- Choose SameSite deliberately and understand the CSRF model.
 - Return immediately after sending an error response.
-- Do not expose password hashes in API responses.
-- Use generic login errors when account enumeration is a concern.
-- Validate input at the API boundary.
+- Never expose password hashes through API responses.
 - Keep JWT payloads small and non-sensitive.
-- Use an appropriate token expiration strategy and provide logout / revocation semantics.
+- Use appropriate token expiry and logout/revocation semantics.
+- Validate input at the API boundary.
