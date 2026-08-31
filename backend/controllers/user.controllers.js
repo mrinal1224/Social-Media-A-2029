@@ -1,116 +1,117 @@
-
-
-import User from "../models/user.model.js"
-import bcrypt from 'bcrypt'
-import genToken from "../utils/genToken.js"
+import User from "../models/user.model.js";
+import bcrypt from "bcrypt";
+import generateToken from "../utils/generateToken.js";
 
 const cookieOptions = {
-    httpOnly : true,
-    // we have to avoid XSS and CSRF attacks
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+    maxAge: 7 * 24 * 60 * 60 * 1000
+};
 
-
-}
-
-export const resgiterUser = async (req, res) => {
-    // 
-    const { name, username, email, password } = req.body
-
-    // validations
-
+export const registerUser = async (req, res) => {
     try {
+        const { name, username, email, password } = req.body;
+
         if (!username || !name || !password || !email) {
-            return res.status(422).json({ message: 'All fields Required!' })
+            return res.status(400).json({ message: "All fields are required" });
         }
 
-        // if username exists
-
-        const user = await User.findOne({ username })
-
-        if (user) {
-            return res.status(400).json({ message: 'username already Exists' })
+        if (password.length < 6) {
+            return res.status(400).json({
+                message: "Password must be at least 6 characters"
+            });
         }
 
-        const emailExists = await User.findOne({ email })
+        const usernameExists = await User.findOne({ username });
 
+        if (usernameExists) {
+            return res.status(409).json({ message: "Username already exists" });
+        }
+
+        const emailExists = await User.findOne({ email });
 
         if (emailExists) {
-            return res.status(400).json({ message: 'username already Exists' })
+            return res.status(409).json({ message: "Email already exists" });
         }
 
-        if (password.length <= 6) {
-            return res.status(400).json({ message: 'Password length should be greater or Equal to 6' })
-        }
-        const salt = await bcrypt.genSalt(10)
-        // console.log(salt)
-        const hashedPassword = await bcrypt.hash(password, 10)
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate JWT 
+        const newUser = await User.create({
+            username,
+            name,
+            password: hashedPassword,
+            email
+        });
 
+        const token = generateToken(newUser._id);
+        res.cookie("token", token, cookieOptions);
 
-        const newUser = await User.create({ username, name, password: hashedPassword, email })
-
-        const token = genToken(newUser._id)
-
-        
-
-        res.cookie("token" , token , cookieOptions)
-        res.status(200).json(newUser)
-
+        return res.status(201).json({
+            message: "Registration successful",
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                username: newUser.username,
+                email: newUser.email
+            }
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message
+        });
     }
-    catch {
-        res.status(500).json({ message: "Intenal Server Error" })
-    }
-}
-
+};
 
 export const loginUser = async (req, res) => {
-    // login the user
-
     try {
-
-        const { email, password } = req.body
+        const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(422).json({ message: 'All fields Required!' })
+            return res.status(400).json({ message: "Email and password are required" });
         }
 
+        const user = await User.findOne({ email });
 
-        const userExists = await User.findOne({ email })
-
-        if (!userExists) {
-            return res.status(404).json({ message: "User not Found" })
+        if (!user) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        const correctPassword = bcrypt.compareSync(password, userExists.password)
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
-
-        if (!correctPassword) {
-            return res.status(401).json({ message: "Invalid Password" })
+        if (!isPasswordCorrect) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        const token = genToken(userExists._id)
-        res.cookie("token" , token , cookieOptions)
+        const token = generateToken(user._id);
+        res.cookie("token", token, cookieOptions);
 
-        res.status(200).json({
-            message: "Login Successfull",
-            user: userExists,
-        })
-
-    } catch (error) {
-        res.status(500).json({ message: "Intenal Server Error" }, error)
+        return res.status(200).json({
+            message: "Login successful",
+            user: {
+                _id: user._id,
+                name: user.name,
+                username: user.username,
+                email: user.email
+            }
+        });
+    } catch (err) {
+        return res.status(500).json({ message: "Internal Server Error" });
     }
-}
+};
 
+export const logoutUser = (req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false
+    });
 
-export const getUser = (req , res)=>{
-    res.status(200).json(req.user)
-}
+    return res.status(200).json({ message: "Logged out successfully" });
+};
 
-
-
-
-
-
-
-
-
+export const getMe = (req, res) => {
+    return res.status(200).json(req.user);
+};
