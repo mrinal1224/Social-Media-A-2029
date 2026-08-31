@@ -1,6 +1,33 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import axiosInstance from '../../axiosCalls/axios'
 
 function SignUp() {
+
+  const [form, setForm] = useState({ name: "", email: "", username: "", password: "" })
+  const [err, setErr] = useState('')
+  const [loader, setLoader] = useState(false)
+
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setErr('')
+    setLoader(true)
+    try {
+       
+    await axiosInstance.post('/users/register' , form)
+
+    console.log('User Registered')
+
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
@@ -20,35 +47,42 @@ function SignUp() {
 
           <form className="space-y-5">
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Name</label>
+              <label htmlFor="name" className="mb-2 block text-sm font-medium text-slate-700">Name</label>
+              <input
+                id="name"
+                name="name"
+                type="name"
+                placeholder="name"
+                value={form.name}
+                onChange={handleChange}
+
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-700">username</label>
+              <input
+                id="username"
+                name="username"
+                type="usernam"
+                placeholder="username"
+                value={form.username}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+
+
+            <div>
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email</label>
               <input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="you@example.com"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">username</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-              />
-            </div>
-
-
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
+                placeholder="email"
+                value={form.email}
+                onChange={handleChange}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
@@ -60,6 +94,8 @@ function SignUp() {
                 id="password"
                 name="password"
                 type="password"
+                onChange={handleChange}
+                value={form.password}
                 placeholder="••••••••"
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
@@ -68,6 +104,7 @@ function SignUp() {
             <button
               type="button"
               className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.99]"
+              onClick={handleSubmit}
             >
               Sign up
             </button>
@@ -76,7 +113,7 @@ function SignUp() {
           <p className="mt-6 text-center text-sm text-slate-500">
             Don't have an account?{' '}
             <Link to="/login" className="font-semibold text-indigo-600 hover:text-indigo-700">
-              Login 
+              Login
             </Link>
           </p>
         </div>
