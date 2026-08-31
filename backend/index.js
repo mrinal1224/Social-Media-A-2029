@@ -1,44 +1,34 @@
 import express from "express";
 import mongoose from "mongoose";
-import dotenv from 'dotenv'
+import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import cors from 'cors'
+import cors from "cors";
 
 import userRoutes from "./routes/user.routes.js";
 
-dotenv.config()
-const app = express()
+dotenv.config();
 
+const app = express();
+const port = 8083;
 
-const port = 8082
-
-
-mongoose.connect(process.env.dbURL).then(() => {
-    console.log('DB Connected')
-}).catch((err) => {
-    console.log(err)
-})
+mongoose.connect(process.env.dbURL)
+    .then(() => {
+        console.log("DB Connected");
+    })
+    .catch((err) => {
+        console.log(err);
+    });
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Must match exact frontend URL
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}))
+    origin: "http://localhost:5173",
+    credentials: true
+}));
 
-app.use(express.json())
-app.use(cookieParser())
+app.use(express.json());
+app.use(cookieParser());
 
-
-
-
-app.use('/users' , userRoutes)
-
-
-
-
-
+app.use("/users", userRoutes);
 
 app.listen(port, () => {
-    console.log(`Server Started at ${port}`)
-})
+    console.log(`Server Started at ${port}`);
+});
