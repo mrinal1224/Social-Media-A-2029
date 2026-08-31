@@ -1,6 +1,40 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import axiosInstance from '../../axiosCalls/axios'
+
+
+
 
 function Login() {
+
+  const [form, setForm] = useState({ email: "", password: "" })
+  const [err, setErr] = useState('')
+  const [loader, setLoader] = useState(false)
+
+ const navigate =  useNavigate()
+
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setErr('')
+    setLoader(true)
+    try {
+
+      await axiosInstance.post('/users/login', form)
+      navigate('/home')
+
+      
+
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
@@ -25,6 +59,8 @@ function Login() {
                 id="email"
                 name="email"
                 type="email"
+                value={form.email}
+                onChange={handleChange}
                 placeholder="you@example.com"
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
@@ -36,6 +72,8 @@ function Login() {
                 id="password"
                 name="password"
                 type="password"
+                value={form.password}
+                onChange={handleChange}
                 placeholder="••••••••"
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
@@ -43,6 +81,7 @@ function Login() {
 
             <button
               type="button"
+              onClick={handleSubmit}
               className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.99]"
             >
               Log In
