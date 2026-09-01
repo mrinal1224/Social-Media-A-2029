@@ -12,7 +12,7 @@ function PublicRoute({ children }) {
   }
 
   if (user) {
-    Navigate('/home')
+    return Navigate('/home')
   }
 
 

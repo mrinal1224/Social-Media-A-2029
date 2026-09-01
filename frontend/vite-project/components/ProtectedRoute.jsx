@@ -12,7 +12,7 @@ function ProtectedRoute({children}) {
    }
 
    if(!user){
-     Navigate('/login')
+     return Navigate('/login')
    }
 
 
