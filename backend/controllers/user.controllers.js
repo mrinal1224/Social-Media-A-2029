@@ -47,6 +47,8 @@ export const registerUser = async (req, res) => {
         const token = generateToken(newUser._id);
         res.cookie("token", token, cookieOptions);
 
+        console.log(token)
+
         return res.status(201).json({
             message: "Registration successful",
             user: {
