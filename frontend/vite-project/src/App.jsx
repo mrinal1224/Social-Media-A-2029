@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import SignUp from './pages/SignUp'
 import Landing from './pages/Landing'
 import Home from './pages/Home'
+import { AuthProvider } from '../context/AuthContext'
+import PublicRoute from '../components/PublicRoute'
+import ProtectedRoute from '../components/ProtectedRoute'
 
 
 function App() {
@@ -11,16 +14,18 @@ function App() {
 
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route path='/' element={<Landing/>}/>
-          <Route path='/login' element={<Login />} />
-          <Route path='/signup' element={<SignUp />} />
-          <Route path='/home' element={ <Home/>}/>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path='/' element={<PublicRoute><Landing /></PublicRoute>} />
+            <Route path='/login' element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path='/signup' element={<PublicRoute><SignUp /></PublicRoute>} />
+            <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
 
 
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </>
   )
 }
