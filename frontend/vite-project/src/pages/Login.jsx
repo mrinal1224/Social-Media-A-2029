@@ -1,39 +1,37 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import axiosInstance from '../axiosCalls/axios'
 
-
-
-
 function Login() {
-
-  const [form, setForm] = useState({ email: "", password: "" })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [err, setErr] = useState('')
   const [loader, setLoader] = useState(false)
 
- const navigate =  useNavigate()
-
+  const navigate = useNavigate()
+  const { setUser } = useAuth()
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErr('')
     setLoader(true)
+
     try {
-
       await axiosInstance.post('/users/login', form)
+      const response = await axiosInstance.get('/users/me')
+      setUser(response.data)
       navigate('/home')
-
-      
-
     } catch (error) {
       console.log(error)
+      setErr(error.response?.data?.message || 'Login failed. Please try again.')
+    } finally {
+      setLoader(false)
     }
   }
-
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
@@ -52,7 +50,9 @@ function Login() {
             <p className="mt-1 text-sm text-slate-500">Log in to continue to SST Social.</p>
           </div>
 
-          <form className="space-y-5">
+          {err && <p className="mb-4 text-sm text-red-600">{err}</p>}
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email</label>
               <input
@@ -80,11 +80,11 @@ function Login() {
             </div>
 
             <button
-              type="button"
-              onClick={handleSubmit}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.99]"
+              type="submit"
+              disabled={loader}
+              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Log In
+              {loader ? 'Logging in...' : 'Log In'}
             </button>
           </form>
 
