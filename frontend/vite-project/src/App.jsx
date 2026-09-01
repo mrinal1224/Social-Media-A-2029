@@ -4,9 +4,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import SignUp from './pages/SignUp'
 import Landing from './pages/Landing'
 import Home from './pages/Home'
-import { AuthProvider } from '../context/AuthContext'
-import PublicRoute from '../components/PublicRoute'
-import ProtectedRoute from '../components/ProtectedRoute'
+import { AuthProvider } from './context/AuthContext'
+import PublicRoute from './components/PublicRoute'
+import ProtectedRoute from './components/ProtectedRoute'
 
 
 function App() {
@@ -17,7 +17,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path='/' element={<PublicRoute><Landing/></PublicRoute>} />
+            <Route path='/' element={<PublicRoute><Landing /></PublicRoute>} />
             <Route path='/login' element={<PublicRoute><Login /></PublicRoute>} />
             <Route path='/signup' element={<PublicRoute><SignUp /></PublicRoute>} />
             <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
