@@ -21,9 +21,8 @@ function Login() {
     setLoader(true)
 
     try {
-      await axiosInstance.post('/users/login', form)
-      const response = await axiosInstance.get('/users/me')
-      setUser(response.data)
+     const response =  await axiosInstance.post('/users/login', form)
+     setUser(response.data)
       navigate('/home')
     } catch (error) {
       console.log(error)
