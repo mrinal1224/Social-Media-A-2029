@@ -1,30 +1,30 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import axiosInstance from '../axiosCalls/axios'
 
 function SignUp() {
-
-  const [form, setForm] = useState({ name: "", email: "", username: "", password: "" })
+  const [form, setForm] = useState({ name: '', email: '', username: '', password: '' })
   const [err, setErr] = useState('')
   const [loader, setLoader] = useState(false)
-
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErr('')
     setLoader(true)
+
     try {
-       
-    await axiosInstance.post('/users/register' , form)
-
-    console.log('User Registered')
-
+      await axiosInstance.post('/users/register', form)
+      navigate('/login')
     } catch (error) {
       console.log(error)
+      setErr(error.response?.data?.message || 'Registration failed. Please try again.')
+    } finally {
+      setLoader(false)
     }
   }
 
@@ -41,38 +41,38 @@ function SignUp() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">Welcome back</h2>
-            <p className="mt-1 text-sm text-slate-500">Sing up to continue to SST Social.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Create your account</h2>
+            <p className="mt-1 text-sm text-slate-500">Sign up to continue to SST Social.</p>
           </div>
 
-          <form className="space-y-5">
+          {err && <p className="mb-4 text-sm text-red-600">{err}</p>}
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="mb-2 block text-sm font-medium text-slate-700">Name</label>
               <input
                 id="name"
                 name="name"
-                type="name"
+                type="text"
                 placeholder="name"
                 value={form.name}
                 onChange={handleChange}
-
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
 
             <div>
-              <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-700">username</label>
+              <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-700">Username</label>
               <input
                 id="username"
                 name="username"
-                type="usernam"
+                type="text"
                 placeholder="username"
                 value={form.username}
                 onChange={handleChange}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
-
 
             <div>
               <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email</label>
@@ -86,7 +86,6 @@ function SignUp() {
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </div>
-
 
             <div>
               <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Password</label>
@@ -102,16 +101,16 @@ function SignUp() {
             </div>
 
             <button
-              type="button"
-              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.99]"
-              onClick={handleSubmit}
+              type="submit"
+              disabled={loader}
+              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign up
+              {loader ? 'Signing up...' : 'Sign up'}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-500">
-            Don't have an account?{' '}
+            Already have an account?{' '}
             <Link to="/login" className="font-semibold text-indigo-600 hover:text-indigo-700">
               Login
             </Link>
