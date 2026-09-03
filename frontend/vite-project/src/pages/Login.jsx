@@ -21,9 +21,9 @@ function Login() {
     setLoader(true)
 
     try {
-     const response =  await axiosInstance.post('/users/login', form)
-     setUser(response.data)
-      navigate('/home')
+      const response = await axiosInstance.post('/users/login', form)
+      setUser(response.data.user)
+      navigate('/home', { replace: true })
     } catch (error) {
       console.log(error)
       setErr(error.response?.data?.message || 'Login failed. Please try again.')
