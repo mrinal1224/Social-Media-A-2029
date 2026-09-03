@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axiosInstance from "../axiosCalls/axios";
 
-
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -9,11 +8,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axiosInstance
-      .get("/users/me")
-      .then((response) => setUser(response.data))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    let mounted = true;
+
+    const checkAuth = async () => {
+      try {
+        const response = await axiosInstance.get("/users/me");
+        if (mounted) {
+          setUser(response.data);
+        }
+      } catch (error) {
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const logout = async () => {
