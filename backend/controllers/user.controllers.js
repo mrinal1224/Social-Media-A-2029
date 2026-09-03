@@ -24,13 +24,12 @@ export const registerUser = async (req, res) => {
         }
 
         const usernameExists = await User.findOne({ username });
-
         if (usernameExists) {
             return res.status(409).json({ message: "Username already exists" });
         }
 
-        const emailExists = await User.findOne({ email });
-
+        const normalizedEmail = email.trim().toLowerCase();
+        const emailExists = await User.findOne({ email: normalizedEmail });
         if (emailExists) {
             return res.status(409).json({ message: "Email already exists" });
         }
@@ -41,13 +40,11 @@ export const registerUser = async (req, res) => {
             username,
             name,
             password: hashedPassword,
-            email
+            email: normalizedEmail
         });
 
         const token = generateToken(newUser._id);
         res.cookie("token", token, cookieOptions);
-
-        console.log(token)
 
         return res.status(201).json({
             message: "Registration successful",
@@ -75,7 +72,7 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: email.trim().toLowerCase() });
 
         if (!user) {
             return res.status(401).json({ message: "Invalid credentials" });
@@ -100,6 +97,7 @@ export const loginUser = async (req, res) => {
             }
         });
     } catch (err) {
+        console.log(err);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
