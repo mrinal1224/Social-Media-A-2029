@@ -19,7 +19,7 @@ function SignUp() {
 
     try {
       await axiosInstance.post('/users/register', form)
-      navigate('/login')
+      navigate('/login', { replace: true })
     } catch (error) {
       console.log(error)
       setErr(error.response?.data?.message || 'Registration failed. Please try again.')
