@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axiosInstance from '../axiosCalls/axios'
+import { useAuth } from '../context/AuthContext'
 
 function SignUp() {
   const [form, setForm] = useState({ name: '', email: '', username: '', password: '' })
   const [err, setErr] = useState('')
   const [loader, setLoader] = useState(false)
   const navigate = useNavigate()
+  const { setUser } = useAuth()
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -18,8 +20,9 @@ function SignUp() {
     setLoader(true)
 
     try {
-      await axiosInstance.post('/users/register', form)
-      navigate('/login', { replace: true })
+      const response = await axiosInstance.post('/users/register', form)
+      setUser(response.data.user)
+      navigate('/home', { replace: true })
     } catch (error) {
       console.log(error)
       setErr(error.response?.data?.message || 'Registration failed. Please try again.')
