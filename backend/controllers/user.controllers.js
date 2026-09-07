@@ -142,24 +142,67 @@ export const getUserProfile = async (req, res) => {
 };
 
 
-export const followUser = async (req , res)=>{
+export const followUser = async (req, res) => {
     try {
-      // check if the id is same as the logged in user
-      // The user cannot follow themselves
+        const currentUserId = req.user._id
+        const targetUserId = req.params.id
 
-      
-
-    // if you are already follwing the user
-    //    - > Unfollow
+        // check if the id is same as the logged in user
+        // The user cannot follow themself
 
 
-   // if not follwing the user 
-   // -> follow
-        
+        if (currentUserId.toString() === targetUserId.toString()) {
+            return res.status(409).json({ message: "You cannot follow yourself" });
+        }
+
+        // if you are already following the user
+        //    - > Unfollow
+
+        const targetUser = await User.findById(targetUserId)
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "No Target User Found" });
+        }
+
+        const alreadyFollowing = targetUser.followers.some((id) =>
+            id.toString() === currentUserId.toString()
+        )
+
+        if (alreadyFollowing) {
+            return res.status(409).json({ message: "You are already Following the User" });
+        }
+
+
+        // if not following the user 
+        // -> follow
+
+        // MongoDb operators
+
+
+
+        await User.findByIdAndUpdate(currentUserId, {
+            $addToSet: { followings: targetUserId }
+        })
+
+
+        await User.findByIdAndUpdate(targetUserId, {
+            $addToSet: { followers: currentUserId }
+        })
+
+
+        res.status(201).json({ message: "User Followed" })
+
+
     } catch (error) {
-        
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 }
 
 
+
+
+export const unfollowUser = async (req, res) => {
+  /// Try writing Unfollow
+}
 

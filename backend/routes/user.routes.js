@@ -20,7 +20,7 @@ userRoutes.get('/profile/:username' ,isAuthenticated, getUserProfile)
 
 // following and followers
 
-// userRoutes.post('/:id/follow' , )
+// userRoutes.post('/:id/follow' , isAuthenticated)
 
 
 

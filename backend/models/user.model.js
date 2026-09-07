@@ -37,7 +37,9 @@ const userSchema = new mongoose.Schema(
         },
 
         followers: [],
+        // people who follow me
         followings: [],
+        // people I follow
         posts: [],
         stories: [],
         reels: [],
