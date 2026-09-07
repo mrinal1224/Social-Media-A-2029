@@ -16,6 +16,12 @@ userRoutes.post("/logout", isAuthenticated, logoutUser);
 userRoutes.get("/me", isAuthenticated, getMe);
 
 
-userRoutes.get('/profile/:username' , getUserProfile)
+userRoutes.get('/profile/:username' ,isAuthenticated, getUserProfile)
+
+// following and followers
+
+// userRoutes.post('/:id/follow' , )
+
+
 
 export default userRoutes;

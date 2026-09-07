@@ -142,4 +142,24 @@ export const getUserProfile = async (req, res) => {
 };
 
 
+export const followUser = async (req , res)=>{
+    try {
+      // check if the id is same as the logged in user
+      // The user cannot follow themselves
+
+      
+
+    // if you are already follwing the user
+    //    - > Unfollow
+
+
+   // if not follwing the user 
+   // -> follow
+        
+    } catch (error) {
+        
+    }
+}
+
+
 
