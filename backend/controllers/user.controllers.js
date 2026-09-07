@@ -112,6 +112,30 @@ export const logoutUser = (req, res) => {
     return res.status(200).json({ message: "Logged out successfully" });
 };
 
-export const getMe = (req, res) => {
+export const getMe = async (req, res) => {
     return res.status(200).json(req.user);
 };
+
+export const getUserProfile = async (req, res) => {
+
+    try {
+
+        const { username } = req.params
+
+        const userData = await User.findOne({ username }).select("-password")
+
+
+        res.status(200).json({ message: "User found", data: userData })
+
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+
+
+
+};
+
+
+
