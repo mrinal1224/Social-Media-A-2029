@@ -124,8 +124,12 @@ export const getUserProfile = async (req, res) => {
 
         const userData = await User.findOne({ username }).select("-password")
 
+        if (!userData) {
+            return res.status(404).json({ message: "User Not Found" });
+        }
 
-        res.status(200).json({ message: "User found", data: userData })
+
+        res.status(200).json({ message: "User found", userData: userData })
 
 
     } catch (error) {

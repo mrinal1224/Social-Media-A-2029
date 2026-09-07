@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import { AuthProvider } from './context/AuthContext'
 import PublicRoute from './components/PublicRoute'
 import ProtectedRoute from './components/ProtectedRoute'
+import Profile from './pages/Profile'
 
 
 function App() {
@@ -21,6 +22,10 @@ function App() {
             <Route path='/login' element={<PublicRoute><Login /></PublicRoute>} />
             <Route path='/signup' element={<PublicRoute><SignUp /></PublicRoute>} />
             <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
+
+            <Route path='/profile/:username' element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+
 
 
           </Routes>
