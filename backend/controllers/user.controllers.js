@@ -122,6 +122,7 @@ export const getUserProfile = async (req, res) => {
 
         const userData = await User.findOne({ username })
             .select("-password")
+            // tom - 456
             .populate("followers", "name username profileImage")
             .populate("followings", "name username profileImage");
 
