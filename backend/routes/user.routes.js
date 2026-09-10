@@ -4,7 +4,9 @@ import {
     loginUser,
     logoutUser,
     getMe,
-    getUserProfile
+    getUserProfile,
+    followUser,
+    unfollowUser
 } from "../controllers/user.controllers.js";
 import isAuthenticated from "../middlewares/authMiddleware.js";
 
@@ -14,14 +16,10 @@ userRoutes.post("/register", registerUser);
 userRoutes.post("/login", loginUser);
 userRoutes.post("/logout", isAuthenticated, logoutUser);
 userRoutes.get("/me", isAuthenticated, getMe);
+userRoutes.get("/profile/:username", isAuthenticated, getUserProfile);
 
-
-userRoutes.get('/profile/:username' ,isAuthenticated, getUserProfile)
-
-// following and followers
-
-// userRoutes.post('/:id/follow' , isAuthenticated)
-
-
+// Following and followers
+userRoutes.post("/:id/follow", isAuthenticated, followUser);
+userRoutes.delete("/:id/follow", isAuthenticated, unfollowUser);
 
 export default userRoutes;
