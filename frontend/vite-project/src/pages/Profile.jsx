@@ -9,42 +9,40 @@ function Profile() {
     const [isFollowing, setIsFollowing] = useState(false)
     const [actionLoading, setActionLoading] = useState(false)
 
+    const fetchProfile = async () => {
+        try {
+            const user = await axiosInstance.get(`/users/profile/${username}`)
+            setUserData(user.data.userData)
+            return user.data.userData
+        } catch (error) {
+            console.error("Failed to fetch profile data:", error)
+            return null
+        }
+    }
+
     useEffect(() => {
-        const fetchProfile = async () => {
+        const loadProfile = async () => {
             try {
                 setLoading(true)
-                const user = await axiosInstance.get(`/users/profile/${username}`)
-                setUserData(user.data.userData)
-            } catch (error) {
-                console.error("Failed to fetch profile data:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
 
-        fetchProfile()
-    }, [username])
+                const profile = await fetchProfile()
+                if (!profile) return
 
-    useEffect(() => {
-        const checkFollowing = async () => {
-            if (!userData) return
-
-            try {
                 const meResponse = await axiosInstance.get('/users/me')
                 const myFollowingList = meResponse.data.followings || []
 
                 setIsFollowing(
                     myFollowingList.some(
-                        (id) => id.toString() === userData._id.toString()
+                        (id) => id.toString() === profile._id.toString()
                     )
                 )
-            } catch (error) {
-                console.error("Failed to check follow status:", error)
+            } finally {
+                setLoading(false)
             }
         }
 
-        checkFollowing()
-    }, [userData])
+        loadProfile()
+    }, [username])
 
     const handleFollowToggle = async () => {
         try {
@@ -52,21 +50,12 @@ function Profile() {
 
             if (isFollowing) {
                 await axiosInstance.delete(`/users/${userData._id}/follow`)
-
-                setUserData((prev) => ({
-                    ...prev,
-                    followers: prev.followers.filter(
-                        (user) => user._id !== undefined ? user._id !== prev._id : true
-                    )
-                }))
             } else {
                 await axiosInstance.post(`/users/${userData._id}/follow`)
             }
 
-            setIsFollowing(!isFollowing)
-
-            const refreshedProfile = await axiosInstance.get(`/users/profile/${username}`)
-            setUserData(refreshedProfile.data.userData)
+            setIsFollowing((prev) => !prev)
+            await fetchProfile()
         } catch (error) {
             console.error("Follow action failed:", error)
             alert(error.response?.data?.message || "Something went wrong")
