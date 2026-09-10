@@ -163,14 +163,8 @@ export const followUser = async (req, res) => {
         }
 
         await User.findByIdAndUpdate(currentUserId, {
-<<<<<<< HEAD
             $addToSet: { followings: targetUserId }
         });
-=======
-            $addToSet: { following: targetUserId }
-        })
-
->>>>>>> 8c24e69 (push)
 
         await User.findByIdAndUpdate(targetUserId, {
             $addToSet: { followers: currentUserId }
