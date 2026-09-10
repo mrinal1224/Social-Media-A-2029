@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import axiosInstance from '../axiosCalls/axios'
+import { useAuth } from '../context/AuthContext'
 
 function Profile() {
     const { username } = useParams()
+    const { user: loggedInUser } = useAuth()
     const [userData, setUserData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [isFollowing, setIsFollowing] = useState(false)
     const [actionLoading, setActionLoading] = useState(false)
+
+    const isOwnProfile = loggedInUser?.username === username
 
     const fetchProfile = async () => {
         try {
@@ -26,7 +30,7 @@ function Profile() {
                 setLoading(true)
 
                 const profile = await fetchProfile()
-                if (!profile) return
+                if (!profile || isOwnProfile) return
 
                 const meResponse = await axiosInstance.get('/users/me')
                 const myFollowingList = meResponse.data.followings || []
@@ -42,7 +46,7 @@ function Profile() {
         }
 
         loadProfile()
-    }, [username])
+    }, [username, isOwnProfile])
 
     const handleFollowToggle = async () => {
         try {
@@ -94,13 +98,15 @@ function Profile() {
                     <p className="text-sm font-medium text-indigo-600">@{userData.username}</p>
                     <p className="text-sm text-gray-500">{userData.email}</p>
 
-                    <button
-                        onClick={handleFollowToggle}
-                        disabled={actionLoading}
-                        className="mt-3 px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
-                    >
-                        {actionLoading ? 'Please wait...' : isFollowing ? 'Unfollow' : 'Follow'}
-                    </button>
+                    {!isOwnProfile && (
+                        <button
+                            onClick={handleFollowToggle}
+                            disabled={actionLoading}
+                            className="mt-3 px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
+                        >
+                            {actionLoading ? 'Please wait...' : isFollowing ? 'Unfollow' : 'Follow'}
+                        </button>
+                    )}
                 </div>
             </div>
 
