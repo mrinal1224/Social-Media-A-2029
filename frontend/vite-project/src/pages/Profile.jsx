@@ -12,6 +12,8 @@ function Profile() {
     const [actionLoading, setActionLoading] = useState(false)
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [editForm, setEditForm] = useState({ name: '', username: '', email: '', bio: '' })
+    const [selectedImage, setSelectedImage] = useState(null)
+    const [previewImage, setPreviewImage] = useState('')
 
     const isOwnProfile = loggedInUser?.username === username
 
@@ -77,6 +79,8 @@ function Profile() {
             email: userData?.email || '',
             bio: userData?.bio || ''
         })
+        setSelectedImage(null)
+        setPreviewImage('')
         setIsEditOpen(true)
     }
 
@@ -85,9 +89,23 @@ function Profile() {
         setEditForm((prev) => ({ ...prev, [name]: value }))
     }
 
+    const handleImageChange = (event) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        setSelectedImage(file)
+
+        const previewUrl = URL.createObjectURL(file)
+        setPreviewImage(previewUrl)
+    }
+
     const handleEditSubmit = (event) => {
         event.preventDefault()
-        setUserData((prev) => ({ ...prev, ...editForm }))
+        setUserData((prev) => ({
+            ...prev,
+            ...editForm,
+            profileImage: previewImage || prev.profileImage
+        }))
         setIsEditOpen(false)
     }
 
@@ -219,6 +237,34 @@ function Profile() {
                         </div>
 
                         <form onSubmit={handleEditSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+                                <div className="flex items-center gap-4">
+                                    <img
+                                        src={previewImage || userData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(editForm.name || 'User')}&background=6366f1&color=fff`}
+                                        alt="Profile preview"
+                                        className="w-20 h-20 rounded-full object-cover border-2 border-indigo-100"
+                                    />
+                                    <div>
+                                        <label className="inline-flex cursor-pointer items-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">
+                                            Choose Image
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {selectedImage && (
+                                            <p className="mt-2 max-w-xs truncate text-xs text-gray-500">
+                                                {selectedImage.name}
+                                            </p>
+                                        )}
+                                        <p className="mt-1 text-xs text-gray-400">Image upload is UI-only for now.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                                 <input
