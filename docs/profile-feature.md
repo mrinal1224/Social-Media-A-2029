@@ -79,3 +79,5 @@ When the profile feature is introduced, keep its API under `user.routes.js` and 
 ## Next class
 
 Start with the public profile API and build the frontend profile page feature-by-feature.
+
+Client - sends an Image

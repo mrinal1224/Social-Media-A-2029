@@ -98,6 +98,7 @@ function Profile() {
         setSelectedImage(file)
 
         const previewUrl = URL.createObjectURL(file)
+        console.log(previewUrl)
         setPreviewImage(previewUrl)
     }
 
