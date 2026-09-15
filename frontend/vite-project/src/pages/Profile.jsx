@@ -15,6 +15,8 @@ function Profile() {
     const [selectedImage, setSelectedImage] = useState(null)
     const [previewImage, setPreviewImage] = useState('')
 
+    // console.log("re-render") // Why there are so many re-renders
+
     const isOwnProfile = loggedInUser?.username === username
 
     const fetchProfile = async () => {
