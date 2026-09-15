@@ -24,6 +24,6 @@ userRoutes.get("/profile/:username", isAuthenticated, getUserProfile);
 userRoutes.post("/:id/follow", isAuthenticated, followUser);
 userRoutes.delete("/:id/follow", isAuthenticated, unfollowUser);
 
-userRoutes.post('/testUpload', isAuthenticated, upload.single('profileImage'), testUpload)
+userRoutes.post('/testUpload',  upload.single('profileImage'), testUpload)
 
 export default userRoutes;

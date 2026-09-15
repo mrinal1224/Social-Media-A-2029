@@ -211,7 +211,16 @@ export const unfollowUser = async (req, res) => {
 
 
 export const testUpload = async (req, res) => {
-    
+    try {
+        if (!req.file) {
+            return res.status(409).json({ message: "No File Uploaded" });
+        }
+
+
+        res.send(req.file)
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
 };
 
 
