@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import axiosInstance from '../axiosCalls/axios'
 import { useAuth } from '../context/AuthContext'
 
 function Profile() {
     const { username } = useParams()
-    const { user: loggedInUser } = useAuth()
+    const navigate = useNavigate()
+    const { user: loggedInUser, setUser } = useAuth()
     const [userData, setUserData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [isFollowing, setIsFollowing] = useState(false)
@@ -14,8 +15,9 @@ function Profile() {
     const [editForm, setEditForm] = useState({ name: '', username: '', email: '', bio: '' })
     const [selectedImage, setSelectedImage] = useState(null)
     const [previewImage, setPreviewImage] = useState('')
-
-    // console.log("re-render") // Why there are so many re-renders
+    const [editError, setEditError] = useState('')
+    const [editLoading, setEditLoading] = useState(false)
+    const fileInputRef = useRef(null)
 
     const isOwnProfile = loggedInUser?.username === username
 
@@ -54,6 +56,14 @@ function Profile() {
         loadProfile()
     }, [username, isOwnProfile])
 
+    useEffect(() => {
+        return () => {
+            if (previewImage) {
+                URL.revokeObjectURL(previewImage)
+            }
+        }
+    }, [previewImage])
+
     const handleFollowToggle = async () => {
         try {
             setActionLoading(true)
@@ -83,7 +93,19 @@ function Profile() {
         })
         setSelectedImage(null)
         setPreviewImage('')
+        setEditError('')
         setIsEditOpen(true)
+    }
+
+    const closeEditProfile = () => {
+        if (editLoading) return
+        setIsEditOpen(false)
+        setSelectedImage(null)
+        setEditError('')
+        setPreviewImage('')
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
     }
 
     const handleEditChange = (event) => {
@@ -95,21 +117,81 @@ function Profile() {
         const file = event.target.files?.[0]
         if (!file) return
 
+        if (!file.type.startsWith('image/')) {
+            setEditError('Please select a valid image file.')
+            event.target.value = ''
+            return
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setEditError('Profile image must be 5MB or smaller.')
+            event.target.value = ''
+            return
+        }
+
+        setEditError('')
+
         setSelectedImage(file)
 
+        if (previewImage) {
+            URL.revokeObjectURL(previewImage)
+        }
+
         const previewUrl = URL.createObjectURL(file)
-        console.log(previewUrl)
         setPreviewImage(previewUrl)
     }
 
-    const handleEditSubmit = (event) => {
+    const handleEditSubmit = async (event) => {
         event.preventDefault()
-        setUserData((prev) => ({
-            ...prev,
-            ...editForm,
-            profileImage: previewImage || prev.profileImage
-        }))
-        setIsEditOpen(false)
+        setEditError('')
+
+        if (!editForm.name.trim() || !editForm.username.trim() || !editForm.email.trim()) {
+            setEditError('Name, username and email are required.')
+            return
+        }
+
+        try {
+            setEditLoading(true)
+
+            const formData = new FormData()
+            formData.append('name', editForm.name.trim())
+            formData.append('username', editForm.username.trim())
+            formData.append('email', editForm.email.trim())
+            formData.append('bio', editForm.bio.trim())
+
+            if (selectedImage) {
+                formData.append('profileImage', selectedImage)
+            }
+
+            const response = await axiosInstance.post('/users/updateProfile', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+
+            const updatedUser = response.data.user
+
+            setUserData(updatedUser)
+            setUser({
+                ...loggedInUser,
+                ...updatedUser
+            })
+
+            const usernameChanged = updatedUser.username !== username
+
+            closeEditProfile()
+
+            if (usernameChanged) {
+                navigate(`/profile/${updatedUser.username}`, { replace: true })
+            }
+        } catch (error) {
+            console.error('Profile update failed:', error)
+            setEditError(
+                error.response?.data?.message || 'Unable to update profile. Please try again.'
+            )
+        } finally {
+            setEditLoading(false)
+        }
     }
 
     if (loading) {
@@ -231,13 +313,20 @@ function Profile() {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setIsEditOpen(false)}
-                                className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
+                                onClick={closeEditProfile}
+                                disabled={editLoading}
+                                className="text-gray-400 hover:text-gray-700 text-2xl leading-none disabled:opacity-50"
                                 aria-label="Close edit profile"
                             >
                                 &times;
                             </button>
                         </div>
+
+                        {editError && (
+                            <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                                {editError}
+                            </div>
+                        )}
 
                         <form onSubmit={handleEditSubmit} className="space-y-4">
                             <div>
@@ -252,6 +341,7 @@ function Profile() {
                                         <label className="inline-flex cursor-pointer items-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">
                                             Choose Image
                                             <input
+                                                ref={fileInputRef}
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={handleImageChange}
@@ -263,7 +353,7 @@ function Profile() {
                                                 {selectedImage.name}
                                             </p>
                                         )}
-                                        <p className="mt-1 text-xs text-gray-400">Image upload is UI-only for now.</p>
+                                        <p className="mt-1 text-xs text-gray-400">PNG, JPG or other image up to 5MB.</p>
                                     </div>
                                 </div>
                             </div>
@@ -315,16 +405,18 @@ function Profile() {
                             <div className="flex justify-end gap-3 pt-2">
                                 <button
                                     type="button"
-                                    onClick={() => setIsEditOpen(false)}
-                                    className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    onClick={closeEditProfile}
+                                    disabled={editLoading}
+                                    className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+                                    disabled={editLoading}
+                                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    Save Changes
+                                    {editLoading ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>
