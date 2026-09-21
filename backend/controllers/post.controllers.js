@@ -1,5 +1,6 @@
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import Post from "../models/post.model.js";
+import User from "../models/user.model.js";
 
 // create post
 export const createPost = async (req, res) => {
@@ -26,7 +27,18 @@ export const createPost = async (req, res) => {
         })
 
 
-        res.status(201).json({message : "Post Created" , post : post})
+        // save the post id for the user 
+
+        await User.findByIdAndUpdate(req.user._id, {
+            $push: { posts: post._id }
+        })
+
+        //extarct username , name and profileImage from author
+
+
+        const populatedPost = await Post.findById(post._id).populate('author', 'name username profileImage')
+
+       res.status(201).json({ message: "Post Created", post: populatedPost })
 
 
 
@@ -34,7 +46,7 @@ export const createPost = async (req, res) => {
 
 
     } catch (error) {
-
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 }
 
