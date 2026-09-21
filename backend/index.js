@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import userRoutes from "./routes/user.routes.js";
+import postRoutes from "./routes/post.routes.js";
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/users", userRoutes);
+app.use("/post", postRoutes);
 
 app.listen(port, () => {
     console.log(`Server Started at ${port}`);
