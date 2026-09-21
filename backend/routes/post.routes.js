@@ -1,13 +1,13 @@
 import express from 'express'
-import isAuthenticated from '../middlewares/authMiddleware';
-import upload from '../middlewares/upload.middleware';
-import { createPost } from '../controllers/post.controllers';
+import isAuthenticated from '../middlewares/authMiddleware.js';
+import upload from '../middlewares/upload.middleware.js';
+import { createPost } from '../controllers/post.controllers.js';
 
 
 const postRoutes = express.Router();
 
 
-// postRoutes.post('/create', isAuthenticated, upload.single('image'), createPost)
+postRoutes.post('/create', isAuthenticated, upload.single('image'), createPost)
 
 
 
