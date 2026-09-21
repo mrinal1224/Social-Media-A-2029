@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const postSchema = new mongoose.Schema(
+const reelSchema = new mongoose.Schema(
     {
 
         author:{
@@ -14,7 +14,7 @@ const postSchema = new mongoose.Schema(
             maxlength : 500
         },
 
-        image : {
+        video : {
             type : String
         }
 
@@ -23,6 +23,6 @@ const postSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-const Post = mongoose.model("Post", postSchema);
+const Reel = mongoose.model("Reel",reelSchema);
 
-export default Post;
+export default Reel;
