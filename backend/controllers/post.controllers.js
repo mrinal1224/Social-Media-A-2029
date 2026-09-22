@@ -1,24 +1,16 @@
-import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 
 // create post
+// The image is already uploaded directly to Cloudinary by the client using a
+// signed upload (see /upload/signature); we just receive the resulting URL.
 export const createPost = async (req, res) => {
     try {
-        const { caption } = req.body
+        const { caption, image } = req.body
 
         if (caption.length > 500) {
             res.status(401).json({ message: 'Caption Cannot be more than 500 characters ' })
         }
-
-
-        let image;
-
-        if (req.file) {
-            const uploadedImage = await uploadToCloudinary(req.file.buffer)
-            image = uploadedImage.secure_url
-        }
-
 
         const post = await Post.create({
             author: req.user._id,

@@ -1,47 +1,16 @@
 import Reel from "../models/reel.model.js";
 import User from "../models/user.model.js";
-import cloudinary from "../utils/cloudinary.js";
 
-
-const uploadReelToCloudinary = (buffer) => {
-    return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-            {
-                folder: "social-media/reels",
-                resource_type: "video",
-            },
-            (error, result) => {
-                if (error) {
-                    reject(error);
-                    return;
-                }
-
-                resolve(result);
-            }
-        );
-
-        uploadStream.end(buffer);
-    });
-};
-
-
-// create post
+// create reel
+// The video is already uploaded directly to Cloudinary by the client using a
+// signed upload (see /upload/signature); we just receive the resulting URL.
 export const createReel = async (req, res) => {
     try {
-        const { caption } = req.body
+        const { caption, video } = req.body
 
         if (caption.length > 500) {
             res.status(401).json({ message: 'Caption Cannot be more than 500 characters ' })
         }
-
-
-        let video;
-
-        if (req.file) {
-            const uploadedVideo = await uploadReelToCloudinary(req.file.buffer)
-            video = uploadedVideo.secure_url
-        }
-
 
         const reel = await Reel.create({
             author: req.user._id,
