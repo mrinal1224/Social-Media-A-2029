@@ -16,7 +16,11 @@ const reelSchema = new mongoose.Schema(
 
         video : {
             type : String
-        }
+        },
+
+        likes : [
+            // userIds
+        ]
 
 
     },

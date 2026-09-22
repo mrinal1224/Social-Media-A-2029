@@ -20,7 +20,10 @@ const postSchema = new mongoose.Schema(
 
         likes : [
             // userIds
-        ]
+        ],
+
+    // Should we handle comments here? 
+    //  should we create a separate comment Model?
 
 
     },
