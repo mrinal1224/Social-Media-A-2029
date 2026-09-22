@@ -44,6 +44,7 @@ function Home() {
     const fetchPosts = async () => {
       try {
         const response = await axiosInstance.get("/post");
+        console.log(response)
         setPosts(response.data.posts || []);
       } catch (error) {
         console.error("Posts fetch failed:", error);
@@ -56,6 +57,7 @@ function Home() {
     const fetchReels = async () => {
       try {
         const response = await axiosInstance.get("/reel");
+        console.log(response)
         setReels(response.data.reels || []);
       } catch (error) {
         console.error("Reels fetch failed:", error);
@@ -112,6 +114,7 @@ function Home() {
 
       if (contentType === "post") {
         const response = await axiosInstance.post("/post/create", formData);
+        console.log(response)
         setPosts((prevPosts) => [response.data.post, ...prevPosts]);
       } else {
         const response = await axiosInstance.post("/reel/createReel", formData);
