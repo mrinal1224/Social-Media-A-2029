@@ -27,6 +27,15 @@ function Home() {
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState("");
 
+  // CREATE FLOW STATE:
+  // One simple composer supports both posts and reels.
+  // contentType decides which backend endpoint and file field we use.
+  const [contentType, setContentType] = useState("post");
+  const [caption, setCaption] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState("");
+
   // HOME FEED FETCH:
   // Keep the flow simple: fetch posts first, then fetch reels.
   // Each request has its own error handling so one API failing does not stop
@@ -70,6 +79,71 @@ function Home() {
 
     loadFeed();
   }, []);
+
+  // CREATE POST / REEL:
+  // We send FormData because both backend create routes accept an uploaded file.
+  const handleCreateContent = async (event) => {
+    event.preventDefault();
+
+    if (!caption.trim()) {
+      setCreateError("Please add a caption.");
+      return;
+    }
+
+    if (!selectedFile) {
+      setCreateError(
+        contentType === "post"
+          ? "Please select an image."
+          : "Please select a video."
+      );
+      return;
+    }
+
+    try {
+      setCreateLoading(true);
+      setCreateError("");
+
+      const formData = new FormData();
+      formData.append("caption", caption.trim());
+      formData.append(
+        contentType === "post" ? "image" : "video",
+        selectedFile
+      );
+
+      if (contentType === "post") {
+        const response = await axiosInstance.post("/post/create", formData);
+        setPosts((prevPosts) => [response.data.post, ...prevPosts]);
+      } else {
+        const response = await axiosInstance.post("/reel/createReel", formData);
+        setReels((prevReels) => [response.data.reel, ...prevReels]);
+      }
+
+      setCaption("");
+      setSelectedFile(null);
+      event.target.reset();
+    } catch (error) {
+      console.error("Content creation failed:", error);
+      setCreateError(
+        error.response?.data?.message || "Unable to create content."
+      );
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setCreateError("");
+  };
+
+  const handleContentTypeChange = (type) => {
+    setContentType(type);
+    setSelectedFile(null);
+    setCreateError("");
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -159,20 +233,68 @@ function Home() {
             </div>
           </div>
 
-          <div className="mb-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
+          {/* CREATE POST / REEL COMPOSER */}
+          <form
+            onSubmit={handleCreateContent}
+            className="mb-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <div className="flex items-start gap-3">
               <Avatar initials={getInitials(user?.name)} tone="from-indigo-500 to-violet-500" />
-              <button className="flex-1 rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm text-slate-400 transition hover:bg-slate-100">
-                What’s on your mind, {user?.name?.split(" ")[0] || "there"}?
-              </button>
-              <button className="hidden rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 sm:block">+ Post</button>
+
+              <textarea
+                value={caption}
+                onChange={(event) => setCaption(event.target.value)}
+                maxLength={500}
+                rows={2}
+                placeholder={`What's on your mind, ${user?.name?.split(" ")[0] || "there"}?`}
+                className="flex-1 resize-none rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:bg-slate-100"
+              />
             </div>
 
-            <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
-              <button className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50">▧ Add Image</button>
-              <button className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50">▶ Add Reel</button>
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+              <button
+                type="button"
+                onClick={() => handleContentTypeChange("post")}
+                className={contentType === "post" ? "rounded-xl bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700" : "rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50"}
+              >
+                ▧ Post
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleContentTypeChange("reel")}
+                className={contentType === "reel" ? "rounded-xl bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700" : "rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50"}
+              >
+                ▶ Reel
+              </button>
+
+              <label className="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50">
+                {contentType === "post" ? "Choose Image" : "Choose Video"}
+                <input
+                  type="file"
+                  accept={contentType === "post" ? "image/*" : "video/*"}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={createLoading}
+                className="ml-auto rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {createLoading ? "Creating..." : contentType === "post" ? "Create Post" : "Create Reel"}
+              </button>
             </div>
-          </div>
+
+            {selectedFile && (
+              <p className="mt-2 text-xs text-slate-500">Selected: {selectedFile.name}</p>
+            )}
+
+            {createError && (
+              <p className="mt-2 text-xs text-red-500">{createError}</p>
+            )}
+          </form>
 
           <div className="space-y-5">
             {feedLoading && (
