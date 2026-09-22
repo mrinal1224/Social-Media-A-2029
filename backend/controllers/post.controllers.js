@@ -84,7 +84,7 @@ export const updateLikes = async (req, res) => {
 
 
 
-        const isAlreadyLiked = await Post.likes.some((id) => id === userId)
+        const isAlreadyLiked = post.likes.some((id) => id.toString() === userId.toString())
 
         if (isAlreadyLiked) {
             post.likes.pull(userId)
@@ -94,8 +94,10 @@ export const updateLikes = async (req, res) => {
 
         await post.save()
 
+        return res.status(200).json({ message: isAlreadyLiked ? "Post Unliked" : "Post Liked", likes: post.likes.length })
+
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ message: "Internal Server Error" , error: error });
     }
 }
 
