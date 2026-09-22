@@ -28,32 +28,47 @@ function Home() {
   const [feedError, setFeedError] = useState("");
 
   // HOME FEED FETCH:
-  // Posts and reels are fetched from separate APIs and then stored locally.
-  // This keeps the UI ready for independent pagination/filtering later.
+  // Keep the flow simple: fetch posts first, then fetch reels.
+  // Each request has its own error handling so one API failing does not stop
+  // the other content type from being loaded.
   useEffect(() => {
-    const fetchHomeFeed = async () => {
+    const fetchPosts = async () => {
+      try {
+        const response = await axiosInstance.get("/post");
+        setPosts(response.data.posts || []);
+      } catch (error) {
+        console.error("Posts fetch failed:", error);
+        setFeedError(
+          error.response?.data?.message || "Unable to load posts."
+        );
+      }
+    };
+
+    const fetchReels = async () => {
+      try {
+        const response = await axiosInstance.get("/reel");
+        setReels(response.data.reels || []);
+      } catch (error) {
+        console.error("Reels fetch failed:", error);
+        setFeedError(
+          error.response?.data?.message || "Unable to load reels."
+        );
+      }
+    };
+
+    const loadFeed = async () => {
       try {
         setFeedLoading(true);
         setFeedError("");
 
-        const [postsResponse, reelsResponse] = await Promise.all([
-          axiosInstance.get("/post"),
-          axiosInstance.get("/reel"),
-        ]);
-
-        setPosts(postsResponse.data.posts || []);
-        setReels(reelsResponse.data.reels || []);
-      } catch (error) {
-        console.error("Failed to load home feed:", error);
-        setFeedError(
-          error.response?.data?.message || "Unable to load your feed."
-        );
+        await fetchPosts();
+        await fetchReels();
       } finally {
         setFeedLoading(false);
       }
     };
 
-    fetchHomeFeed();
+    loadFeed();
   }, []);
 
   const handleLogout = async () => {
