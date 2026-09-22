@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../axiosCalls/axios";
 import { useAuth } from "../context/AuthContext";
 
 const stories = [
@@ -20,6 +22,39 @@ function Avatar({ initials, tone = "from-slate-700 to-slate-900", size = "h-11 w
 function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [posts, setPosts] = useState([]);
+  const [reels, setReels] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState("");
+
+  // HOME FEED FETCH:
+  // Posts and reels are fetched from separate APIs and then stored locally.
+  // This keeps the UI ready for independent pagination/filtering later.
+  useEffect(() => {
+    const fetchHomeFeed = async () => {
+      try {
+        setFeedLoading(true);
+        setFeedError("");
+
+        const [postsResponse, reelsResponse] = await Promise.all([
+          axiosInstance.get("/post"),
+          axiosInstance.get("/reel"),
+        ]);
+
+        setPosts(postsResponse.data.posts || []);
+        setReels(reelsResponse.data.reels || []);
+      } catch (error) {
+        console.error("Failed to load home feed:", error);
+        setFeedError(
+          error.response?.data?.message || "Unable to load your feed."
+        );
+      } finally {
+        setFeedLoading(false);
+      }
+    };
+
+    fetchHomeFeed();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -125,39 +160,156 @@ function Home() {
           </div>
 
           <div className="space-y-5">
-            {[1, 2].map((item) => (
-              <article key={item} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            {feedLoading && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+                Loading your feed...
+              </div>
+            )}
+
+            {!feedLoading && feedError && (
+              <div className="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm text-red-600 shadow-sm">
+                {feedError}
+              </div>
+            )}
+
+            {!feedLoading && !feedError && posts.length === 0 && reels.length === 0 && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                <p className="font-bold text-slate-700">Your feed is empty</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Create a post or reel to get started.
+                </p>
+              </div>
+            )}
+
+            {/* POSTS: render real API data returned by GET /post. */}
+            {posts.map((post) => (
+              <article
+                key={post._id}
+                className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+              >
                 <div className="flex items-center justify-between px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <Avatar initials={item === 1 ? "AN" : "RO"} tone={item === 1 ? "from-pink-500 to-violet-500" : "from-cyan-500 to-blue-500"} />
+                    <img
+                      src={
+                        post.author?.profileImage ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          post.author?.name || "User"
+                        )}&background=6366f1&color=fff`
+                      }
+                      alt={post.author?.name || "User"}
+                      className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white"
+                    />
                     <div>
-                      <p className="text-sm font-bold">{item === 1 ? "Ananya Sharma" : "Rohan Das"}</p>
-                      <p className="text-xs text-slate-400">@{item === 1 ? "ananya" : "rohan"} · 2h ago</p>
+                      <p className="text-sm font-bold">
+                        {post.author?.name || "Unknown User"}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        @{post.author?.username || "user"} ·{" "}
+                        {new Date(post.createdAt).toLocaleString()}
+                      </p>
                     </div>
                   </div>
-                  <button className="rounded-full px-2 py-1 text-lg leading-none text-slate-400 hover:bg-slate-50">•••</button>
+                  <button className="rounded-full px-2 py-1 text-lg leading-none text-slate-400 hover:bg-slate-50">
+                    •••
+                  </button>
                 </div>
 
-                {item === 1 ? (
-                  <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-violet-100 text-sm font-semibold text-slate-400">
-                    Image preview
-                  </div>
-                ) : (
-                  <div className="flex aspect-[4/3] items-center justify-center bg-slate-950 text-sm font-semibold text-white/50">
-                    Video preview
-                  </div>
+                {post.image && (
+                  <img
+                    src={post.image}
+                    alt={post.caption || "Post"}
+                    className="max-h-[620px] w-full object-cover"
+                  />
                 )}
 
                 <div className="px-5 pb-5 pt-4">
-                  <p className="text-sm leading-6 text-slate-700">{item === 1 ? "Building something cool today 🚀" : "A tiny break between classes."}</p>
+                  <p className="text-sm leading-6 text-slate-700">
+                    {post.caption}
+                  </p>
+
+                  {/* Like/comment counts stay ready for the next feature pass. */}
                   <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                    <span>24 likes</span>
-                    <span>6 comments</span>
+                    <span>0 likes</span>
+                    <span>0 comments</span>
                   </div>
+
                   <div className="mt-4 flex border-t border-slate-100 pt-3">
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">♡ Like</button>
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">◌ Comment</button>
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">↗ Share</button>
+                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                      ♡ Like
+                    </button>
+                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                      ◌ Comment
+                    </button>
+                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                      ↗ Share
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+
+            {/* REELS: render real API data returned by GET /reel. */}
+            {reels.map((reel) => (
+              <article
+                key={reel._id}
+                className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+              >
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        reel.author?.profileImage ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          reel.author?.name || "User"
+                        )}&background=6366f1&color=fff`
+                      }
+                      alt={reel.author?.name || "User"}
+                      className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white"
+                    />
+                    <div>
+                      <p className="text-sm font-bold">
+                        {reel.author?.name || "Unknown User"}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        @{reel.author?.username || "user"} ·{" "}
+                        {new Date(reel.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button className="rounded-full px-2 py-1 text-lg leading-none text-slate-400 hover:bg-slate-50">
+                    •••
+                  </button>
+                </div>
+
+                {reel.video && (
+                  <video
+                    src={reel.video}
+                    controls
+                    className="max-h-[620px] w-full bg-black object-contain"
+                  />
+                )}
+
+                <div className="px-5 pb-5 pt-4">
+                  <p className="text-sm leading-6 text-slate-700">
+                    {reel.caption}
+                  </p>
+
+                  {/* Like/comment counts stay ready for the next feature pass. */}
+                  <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+                    <span>0 likes</span>
+                    <span>0 comments</span>
+                  </div>
+
+                  <div className="mt-4 flex border-t border-slate-100 pt-3">
+                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                      ♡ Like
+                    </button>
+                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                      ◌ Comment
+                    </button>
+                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                      ↗ Share
+                    </button>
                   </div>
                 </div>
               </article>
