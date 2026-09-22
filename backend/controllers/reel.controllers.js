@@ -72,3 +72,23 @@ export const createReel = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error" , error : error });
     }
 }
+
+
+// get all reels
+// Fetch the latest reels separately from posts so the feed can evolve each
+// content type independently (pagination, recommendations, etc. can be added later).
+export const getReels = async (req, res) => {
+    try {
+        const reels = await Reel.find()
+            .populate("author", "name username profileImage")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "Reels fetched successfully",
+            reels
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
