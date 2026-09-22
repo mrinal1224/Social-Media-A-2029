@@ -38,7 +38,7 @@ export const createPost = async (req, res) => {
 
         const populatedPost = await Post.findById(post._id).populate('author', 'name username profileImage')
 
-       res.status(201).json({ message: "Post Created", post: populatedPost })
+        res.status(201).json({ message: "Post Created", post: populatedPost })
 
 
 
@@ -68,5 +68,38 @@ export const getPosts = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+// UpdateLikes 
+
+
+export const updateLikes = async (req, res) => {
+    try {
+        // get post id
+        const post = await Post.findById(req.params.id)
+
+        if (!post) {
+            res.status(404).json({ message: 'No Post Found' })
+        }
+        const userId = req.user._id
+
+
+
+        const isAlreadyLiked = await Post.likes.some((id) => id === userId)
+
+        if (isAlreadyLiked) {
+            post.likes.pull(userId)
+        } else {
+            post.likes.push(userId)
+        }
+
+        await post.save()
+
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+
+
 
 // delete post
