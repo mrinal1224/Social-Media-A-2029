@@ -7,24 +7,20 @@ const commentSchema = new mongoose.Schema(
             ref: "User",
             required: true
         },
-
         text: {
-            type: String
+            type: String,
+            trim: true,
+            required: true,
+            maxlength: 500
         },
-
         post: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Post",
+            ref: "Post"
         },
-
-
         reel: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Reel",
+            ref: "Reel"
         }
-
-
-
     },
     { timestamps: true }
 );
