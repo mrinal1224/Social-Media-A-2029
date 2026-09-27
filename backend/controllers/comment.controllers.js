@@ -2,43 +2,78 @@ import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
 import Reel from "../models/reel.model.js";
 
-const getTargetModel = (type) => {
-    if (type === "post") return Post;
-    if (type === "reel") return Reel;
+const getFilter = (type, id) =>
+    type === "post" ? { post: id } :
+    type === "reel" ? { reel: id } :
+    null;
+
+const contentExists = async (type, id) => {
+    if (type === "post") return Post.exists({ _id: id });
+    if (type === "reel") return Reel.exists({ _id: id });
     return null;
+};
+
+export const getComments = async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        const filter = getFilter(type, id);
+
+        if (!filter) {
+            return res.status(400).json({
+                message: "Content type must be post or reel"
+            });
+        }
+
+        if (!(await contentExists(type, id))) {
+            return res.status(404).json({ message: "Content not found" });
+        }
+
+        const comments = await Comment.find(filter)
+            .populate("user", "name username profileImage")
+            .sort({ createdAt: 1 });
+
+        return res.status(200).json({
+            message: "Comments fetched successfully",
+            comments
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
 };
 
 export const createComment = async (req, res) => {
     try {
-        const { text } = req.body;
         const { type, id } = req.params;
+        const filter = getFilter(type, id);
+        const text = req.body.text?.trim();
 
-        const cleanedText = text?.trim();
-
-        if (!cleanedText) {
-            return res.status(400).json({ message: "Comment Cannot be Empty" });
+        if (!filter) {
+            return res.status(400).json({
+                message: "Content type must be post or reel"
+            });
         }
 
-        if (cleanedText.length > 500) {
-            return res.status(400).json({ message: "Comment Cannot be more than 500 characters" });
+        if (!text) {
+            return res.status(400).json({ message: "Comment cannot be empty" });
         }
 
-        const TargetModel = getTargetModel(type);
-
-        if (!TargetModel) {
-            return res.status(400).json({ message: "Invalid comment type" });
+        if (text.length > 500) {
+            return res.status(400).json({
+                message: "Comment cannot exceed 500 characters"
+            });
         }
 
-        const target = await TargetModel.findById(id);
-
-        if (!target) {
-            return res.status(404).json({ message: `${type === "post" ? "Post" : "Reel"} Not Found` });
+        if (!(await contentExists(type, id))) {
+            return res.status(404).json({ message: "Content not found" });
         }
 
         const comment = await Comment.create({
-            text: cleanedText,
+            text,
             user: req.user._id,
-            [type]: id
+            ...filter
         });
 
         const populatedComment = await Comment.findById(comment._id)
@@ -49,27 +84,36 @@ export const createComment = async (req, res) => {
             comment: populatedComment
         });
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error", error });
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
 };
 
-export const getComments = async (req, res) => {
+export const deleteComment = async (req, res) => {
     try {
-        const { type, id } = req.params;
+        const comment = await Comment.findById(req.params.commentId);
 
-        if (!getTargetModel(type)) {
-            return res.status(400).json({ message: "Invalid comment type" });
+        if (!comment) {
+            return res.status(404).json({ message: "Comment not found" });
         }
 
-        const comments = await Comment.find({ [type]: id })
-            .populate("user", "name username profileImage")
-            .sort({ createdAt: 1 });
+        if (comment.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                message: "You can delete only your own comments"
+            });
+        }
+
+        await comment.deleteOne();
 
         return res.status(200).json({
-            message: "Comments fetched successfully",
-            comments
+            message: "Comment deleted successfully"
         });
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error", error });
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
 };
