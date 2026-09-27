@@ -50,7 +50,7 @@ export const createReel = async (req, res) => {
         })
 
 
-        // save the post id for the user 
+        // save the post id for the user
 
         await User.findByIdAndUpdate(req.user._id, {
             $push: { reels: reel._id }
@@ -62,6 +62,7 @@ export const createReel = async (req, res) => {
         const populatedReel = await Reel.findById(reel._id).populate('author', 'name username profileImage')
 
        res.status(201).json({ message: "Reel Created",reel: populatedReel })
+
 
 
 
@@ -95,15 +96,13 @@ export const getReels = async (req, res) => {
 
 export const updateLikes = async (req, res) => {
     try {
-        // get post id
         const reel = await Reel.findById(req.params.id)
 
-        if (!post) {
-            res.status(404).json({ message: 'No Post Found' })
+        if (!reel) {
+            return res.status(404).json({ message: 'No Reel Found' })
         }
+
         const userId = req.user._id
-
-
 
         const isAlreadyLiked = reel.likes.some((id) => id.toString() === userId.toString())
 
@@ -115,10 +114,13 @@ export const updateLikes = async (req, res) => {
 
         await reel.save()
 
-        return res.status(200).json({ message: isAlreadyLiked ? "Post Unliked" : "Post Liked", likes:reel.likes.length })
+        return res.status(200).json({
+            message: isAlreadyLiked ? "Reel Unliked" : "Reel Liked",
+            likes: reel.likes.length,
+            liked: !isAlreadyLiked
+        })
 
     } catch (error) {
         return res.status(500).json({ message: "Internal Server Error" , error: error });
     }
 }
-
