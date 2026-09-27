@@ -19,6 +19,8 @@ function Avatar({ initials, tone = "from-slate-700 to-slate-900", size = "h-11 w
   );
 }
 
+const getLikeId = (like) => like?._id || like;
+
 function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -36,6 +38,25 @@ function Home() {
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState("");
 
+  // LIKE + COMMENT STATE:
+  // Comments are fetched only when a user opens them for a post/reel.
+  const [openComments, setOpenComments] = useState({});
+  const [commentsByItem, setCommentsByItem] = useState({});
+  const [commentInputs, setCommentInputs] = useState({});
+  const [commentLoading, setCommentLoading] = useState({});
+  const [likeLoading, setLikeLoading] = useState({});
+  const [interactionError, setInteractionError] = useState({});
+
+  const getItemKey = (type, id) => `${type}-${id}`;
+
+  const isLikedByCurrentUser = (item) => {
+    if (!user?._id) return false;
+
+    return (item.likes || []).some(
+      (like) => getLikeId(like)?.toString() === user._id.toString()
+    );
+  };
+
   // HOME FEED FETCH:
   // Keep the flow simple: fetch posts first, then fetch reels.
   // Each request has its own error handling so one API failing does not stop
@@ -44,7 +65,6 @@ function Home() {
     const fetchPosts = async () => {
       try {
         const response = await axiosInstance.get("/post");
-        console.log(response)
         setPosts(response.data.posts || []);
       } catch (error) {
         console.error("Posts fetch failed:", error);
@@ -57,7 +77,6 @@ function Home() {
     const fetchReels = async () => {
       try {
         const response = await axiosInstance.get("/reel");
-        console.log(response)
         setReels(response.data.reels || []);
       } catch (error) {
         console.error("Reels fetch failed:", error);
@@ -114,7 +133,6 @@ function Home() {
 
       if (contentType === "post") {
         const response = await axiosInstance.post("/post/create", formData);
-        console.log(response)
         setPosts((prevPosts) => [response.data.post, ...prevPosts]);
       } else {
         const response = await axiosInstance.post("/reel/createReel", formData);
@@ -148,6 +166,112 @@ function Home() {
     setCreateError("");
   };
 
+  const handleLike = async (type, id) => {
+    const key = getItemKey(type, id);
+    const setItems = type === "post" ? setPosts : setReels;
+
+    try {
+      setLikeLoading((prev) => ({ ...prev, [key]: true }));
+      setInteractionError((prev) => ({ ...prev, [key]: "" }));
+
+      const response = await axiosInstance.post(`/${type}/likes/${id}`);
+      const liked = response.data.liked;
+
+      setItems((items) =>
+        items.map((item) => {
+          if (item._id !== id) return item;
+
+          const currentLikes = item.likes || [];
+          const likesWithoutCurrentUser = currentLikes.filter(
+            (like) => getLikeId(like)?.toString() !== user?._id?.toString()
+          );
+
+          return {
+            ...item,
+            likes: liked && user?._id
+              ? [...likesWithoutCurrentUser, user._id]
+              : likesWithoutCurrentUser,
+          };
+        })
+      );
+    } catch (error) {
+      console.error("Like update failed:", error);
+      setInteractionError((prev) => ({
+        ...prev,
+        [key]: error.response?.data?.message || "Unable to update like.",
+      }));
+    } finally {
+      setLikeLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleToggleComments = async (type, id) => {
+    const key = getItemKey(type, id);
+    const willOpen = !openComments[key];
+
+    setOpenComments((prev) => ({ ...prev, [key]: willOpen }));
+
+    if (!willOpen || commentsByItem[key] !== undefined) {
+      return;
+    }
+
+    try {
+      setCommentLoading((prev) => ({ ...prev, [key]: true }));
+      setInteractionError((prev) => ({ ...prev, [key]: "" }));
+
+      const response = await axiosInstance.get(`/comment/${type}/${id}`);
+
+      setCommentsByItem((prev) => ({
+        ...prev,
+        [key]: response.data.comments || [],
+      }));
+    } catch (error) {
+      console.error("Comments fetch failed:", error);
+      setInteractionError((prev) => ({
+        ...prev,
+        [key]: error.response?.data?.message || "Unable to load comments.",
+      }));
+    } finally {
+      setCommentLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleAddComment = async (event, type, id) => {
+    event.preventDefault();
+
+    const key = getItemKey(type, id);
+    const text = commentInputs[key]?.trim();
+
+    if (!text) return;
+
+    try {
+      setCommentLoading((prev) => ({ ...prev, [key]: true }));
+      setInteractionError((prev) => ({ ...prev, [key]: "" }));
+
+      const response = await axiosInstance.post(`/comment/${type}/${id}`, {
+        text,
+      });
+
+      setCommentsByItem((prev) => ({
+        ...prev,
+        [key]: [...(prev[key] || []), response.data.comment],
+      }));
+
+      setCommentInputs((prev) => ({
+        ...prev,
+        [key]: "",
+      }));
+    } catch (error) {
+      console.error("Comment create failed:", error);
+      setInteractionError((prev) => ({
+        ...prev,
+        [key]: error.response?.data?.message || "Unable to add comment.",
+      }));
+    } finally {
+      setCommentLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -155,6 +279,125 @@ function Home() {
 
   const getInitials = (name) =>
     name?.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "U";
+
+  const renderInteractions = (item, type) => {
+    const key = getItemKey(type, item._id);
+    const liked = isLikedByCurrentUser(item);
+    const comments = commentsByItem[key];
+
+    return (
+      <>
+        <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+          <span>{item.likes?.length || 0} likes</span>
+          <span>
+            {comments !== undefined
+              ? `${comments.length} ${comments.length === 1 ? "comment" : "comments"}`
+              : "Comments"}
+          </span>
+        </div>
+
+        <div className="mt-4 flex border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={() => handleLike(type, item._id)}
+            disabled={likeLoading[key]}
+            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              liked
+                ? "text-rose-600 hover:bg-rose-50"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {liked ? "♥ Liked" : "♡ Like"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleToggleComments(type, item._id)}
+            className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          >
+            ◌ {openComments[key] ? "Hide Comments" : "Comment"}
+          </button>
+
+          <button
+            type="button"
+            className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          >
+            ↗ Share
+          </button>
+        </div>
+
+        {interactionError[key] && (
+          <p className="mt-2 text-xs text-red-500">{interactionError[key]}</p>
+        )}
+
+        {openComments[key] && (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            {commentLoading[key] && comments === undefined ? (
+              <p className="text-xs text-slate-400">Loading comments...</p>
+            ) : (
+              <div className="space-y-3">
+                {(comments || []).map((comment) => (
+                  <div key={comment._id} className="flex items-start gap-3">
+                    <img
+                      src={
+                        comment.user?.profileImage ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          comment.user?.name || "User"
+                        )}&background=6366f1&color=fff`
+                      }
+                      alt={comment.user?.name || "User"}
+                      className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    />
+
+                    <div className="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
+                      <p className="text-xs font-bold text-slate-700">
+                        {comment.user?.name || "Unknown User"}
+                      </p>
+                      <p className="mt-0.5 break-words text-sm text-slate-600">
+                        {comment.text}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {comments?.length === 0 && (
+                  <p className="text-xs text-slate-400">
+                    No comments yet. Start the conversation.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <form
+              onSubmit={(event) => handleAddComment(event, type, item._id)}
+              className="mt-4 flex items-center gap-2"
+            >
+              <input
+                type="text"
+                value={commentInputs[key] || ""}
+                onChange={(event) =>
+                  setCommentInputs((prev) => ({
+                    ...prev,
+                    [key]: event.target.value,
+                  }))
+                }
+                maxLength={500}
+                placeholder="Write a comment..."
+                className="min-w-0 flex-1 rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:bg-slate-100"
+              />
+              <button
+                type="submit"
+                disabled={commentLoading[key] || !commentInputs[key]?.trim()}
+                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Post
+              </button>
+            </form>
+          </div>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#f6f7fb] text-slate-900">
@@ -367,23 +610,7 @@ function Home() {
                     {post.caption}
                   </p>
 
-                  {/* Like/comment counts stay ready for the next feature pass. */}
-                  <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                    <span>0 likes</span>
-                    <span>0 comments</span>
-                  </div>
-
-                  <div className="mt-4 flex border-t border-slate-100 pt-3">
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                      ♡ Like
-                    </button>
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                      ◌ Comment
-                    </button>
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                      ↗ Share
-                    </button>
-                  </div>
+                  {renderInteractions(post, "post")}
                 </div>
               </article>
             ))}
@@ -434,23 +661,7 @@ function Home() {
                     {reel.caption}
                   </p>
 
-                  {/* Like/comment counts stay ready for the next feature pass. */}
-                  <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                    <span>0 likes</span>
-                    <span>0 comments</span>
-                  </div>
-
-                  <div className="mt-4 flex border-t border-slate-100 pt-3">
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                      ♡ Like
-                    </button>
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                      ◌ Comment
-                    </button>
-                    <button className="flex-1 rounded-xl py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                      ↗ Share
-                    </button>
-                  </div>
+                  {renderInteractions(reel, "reel")}
                 </div>
               </article>
             ))}
