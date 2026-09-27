@@ -106,17 +106,13 @@ function Home() {
   const handleCreateContent = async (event) => {
     event.preventDefault();
 
-    if (!caption.trim()) {
-      setCreateError("Please add a caption.");
+    if (contentType === "post" && !caption.trim() && !selectedFile) {
+      setCreateError("Add a caption or select an image.");
       return;
     }
 
-    if (!selectedFile) {
-      setCreateError(
-        contentType === "post"
-          ? "Please select an image."
-          : "Please select a video."
-      );
+    if (contentType === "reel" && !selectedFile) {
+      setCreateError("Please select a video.");
       return;
     }
 
@@ -126,10 +122,12 @@ function Home() {
 
       const formData = new FormData();
       formData.append("caption", caption.trim());
-      formData.append(
-        contentType === "post" ? "image" : "video",
-        selectedFile
-      );
+      if (selectedFile) {
+        formData.append(
+          contentType === "post" ? "image" : "video",
+          selectedFile
+        );
+      }
 
       if (contentType === "post") {
         const response = await axiosInstance.post("/post/create", formData);
@@ -155,6 +153,24 @@ function Home() {
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const isPost = contentType === "post";
+    const hasValidType = isPost
+      ? file.type.startsWith("image/")
+      : file.type.startsWith("video/");
+    const maxSize = isPost ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+
+    if (!hasValidType) {
+      setCreateError(isPost ? "Please select a valid image." : "Please select a valid video.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setCreateError(isPost ? "Image must be 5MB or smaller." : "Video must be 50MB or smaller.");
+      event.target.value = "";
+      return;
+    }
 
     setSelectedFile(file);
     setCreateError("");
@@ -272,6 +288,26 @@ function Home() {
     }
   };
 
+  const handleDeleteComment = async (commentId, type, id) => {
+    const key = getItemKey(type, id);
+
+    try {
+      setInteractionError((prev) => ({ ...prev, [key]: "" }));
+      await axiosInstance.delete(`/comment/${commentId}`);
+
+      setCommentsByItem((prev) => ({
+        ...prev,
+        [key]: (prev[key] || []).filter((comment) => comment._id !== commentId),
+      }));
+    } catch (error) {
+      console.error("Comment delete failed:", error);
+      setInteractionError((prev) => ({
+        ...prev,
+        [key]: error.response?.data?.message || "Unable to delete comment.",
+      }));
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -349,10 +385,21 @@ function Home() {
                       className="h-8 w-8 shrink-0 rounded-full object-cover"
                     />
 
-                    <div className="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                      <p className="text-xs font-bold text-slate-700">
-                        {comment.user?.name || "Unknown User"}
-                      </p>
+                    <div className="min-w-0 flex-1 rounded-2xl bg-slate-50 px-3 py-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs font-bold text-slate-700">
+                          {comment.user?.name || "Unknown User"}
+                        </p>
+                        {comment.user?._id === user?._id && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteComment(comment._id, type, item._id)}
+                            className="text-[11px] font-semibold text-slate-400 transition hover:text-red-500"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                       <p className="mt-0.5 break-words text-sm text-slate-600">
                         {comment.text}
                       </p>
