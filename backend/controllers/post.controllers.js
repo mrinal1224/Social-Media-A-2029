@@ -27,7 +27,7 @@ export const createPost = async (req, res) => {
         })
 
 
-        // save the post id for the user 
+        // save the post id for the user
 
         await User.findByIdAndUpdate(req.user._id, {
             $push: { posts: post._id }
@@ -39,6 +39,7 @@ export const createPost = async (req, res) => {
         const populatedPost = await Post.findById(post._id).populate('author', 'name username profileImage')
 
         res.status(201).json({ message: "Post Created", post: populatedPost })
+
 
 
 
@@ -69,7 +70,7 @@ export const getPosts = async (req, res) => {
     }
 };
 
-// UpdateLikes 
+// UpdateLikes
 
 
 export const updateLikes = async (req, res) => {
@@ -78,11 +79,10 @@ export const updateLikes = async (req, res) => {
         const post = await Post.findById(req.params.id)
 
         if (!post) {
-            res.status(404).json({ message: 'No Post Found' })
+            return res.status(404).json({ message: 'No Post Found' })
         }
+
         const userId = req.user._id
-
-
 
         const isAlreadyLiked = post.likes.some((id) => id.toString() === userId.toString())
 
@@ -94,7 +94,11 @@ export const updateLikes = async (req, res) => {
 
         await post.save()
 
-        return res.status(200).json({ message: isAlreadyLiked ? "Post Unliked" : "Post Liked", likes: post.likes.length })
+        return res.status(200).json({
+            message: isAlreadyLiked ? "Post Unliked" : "Post Liked",
+            likes: post.likes.length,
+            liked: !isAlreadyLiked
+        })
 
     } catch (error) {
         return res.status(500).json({ message: "Internal Server Error" , error: error });
