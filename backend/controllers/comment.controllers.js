@@ -1,51 +1,75 @@
+import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
-import User from "../models/user.model.js";
+import Reel from "../models/reel.model.js";
 
+const getTargetModel = (type) => {
+    if (type === "post") return Post;
+    if (type === "reel") return Reel;
+    return null;
+};
 
 export const createComment = async (req, res) => {
     try {
+        const { text } = req.body;
+        const { type, id } = req.params;
 
-        const { text } = req.body
+        const cleanedText = text?.trim();
 
-        // const post = Post.findById(req.params.id)
-
-        // const userId = req.user._id
-
-        // next Steps
-
-        if (!text) {
-            res.status(400).json({ message: 'Comment Cannot be Empty ' })
+        if (!cleanedText) {
+            return res.status(400).json({ message: "Comment Cannot be Empty" });
         }
 
-
-        if (text.length > 500) {
-            res.status(400).json({ message: 'Comment Cannot be more than 500 characters ' })
+        if (cleanedText.length > 500) {
+            return res.status(400).json({ message: "Comment Cannot be more than 500 characters" });
         }
 
-        // Figure this out 
+        const TargetModel = getTargetModel(type);
 
-        await Comment.create({
-            text,
+        if (!TargetModel) {
+            return res.status(400).json({ message: "Invalid comment type" });
+        }
+
+        const target = await TargetModel.findById(id);
+
+        if (!target) {
+            return res.status(404).json({ message: `${type === "post" ? "Post" : "Reel"} Not Found` });
+        }
+
+        const comment = await Comment.create({
+            text: cleanedText,
             user: req.user._id,
-            post: req.params.id,
+            [type]: id
+        });
 
-        })
+        const populatedComment = await Comment.findById(comment._id)
+            .populate("user", "name username profileImage");
 
-
-        res.status(201).json({ message: 'Comment Added' })
-
-
-
-
-
-
-
-
+        return res.status(201).json({
+            message: "Comment Added",
+            comment: populatedComment
+        });
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error", error: error });
+        return res.status(500).json({ message: "Internal Server Error", error });
     }
-}
+};
 
-// get Comments
+export const getComments = async (req, res) => {
+    try {
+        const { type, id } = req.params;
 
-// Delete Comments
+        if (!getTargetModel(type)) {
+            return res.status(400).json({ message: "Invalid comment type" });
+        }
+
+        const comments = await Comment.find({ [type]: id })
+            .populate("user", "name username profileImage")
+            .sort({ createdAt: 1 });
+
+        return res.status(200).json({
+            message: "Comments fetched successfully",
+            comments
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error", error });
+    }
+};
