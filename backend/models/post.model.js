@@ -2,30 +2,25 @@ import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema(
     {
-
-        author:{
+        author: {
             type: mongoose.Schema.Types.ObjectId,
-            ref : 'User',
+            ref: "User",
             required: true
         },
-
-        caption : {
-            type : String,
-            maxlength : 500
+        caption: {
+            type: String,
+            trim: true,
+            maxlength: 500
         },
-
-        image : {
-            type : String
+        image: {
+            type: String
         },
-
-        likes : [
-            // userIds
-        ],
-
-    // Should we handle comments here? 
-    //  should we create a separate comment Model?
-
-
+        likes: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User"
+            }
+        ]
     },
     { timestamps: true }
 );
