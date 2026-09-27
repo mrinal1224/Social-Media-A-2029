@@ -2,58 +2,54 @@ import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 
-// create post
 export const createPost = async (req, res) => {
     try {
-        const { caption } = req.body
+        const caption = req.body.caption?.trim() || "";
 
-        if (caption.length > 500) {
-            res.status(401).json({ message: 'Caption Cannot be more than 500 characters ' })
+        if (!caption && !req.file) {
+            return res.status(400).json({
+                message: "Add a caption or upload an image"
+            });
         }
 
+        if (caption.length > 500) {
+            return res.status(400).json({
+                message: "Caption cannot exceed 500 characters"
+            });
+        }
 
         let image;
 
         if (req.file) {
-            const uploadedImage = await uploadToCloudinary(req.file.buffer)
-            image = uploadedImage.secure_url
+            const uploadedImage = await uploadToCloudinary(req.file.buffer);
+            image = uploadedImage.secure_url;
         }
-
 
         const post = await Post.create({
             author: req.user._id,
-            caption: caption,
+            caption,
             image
-        })
-
-
-        // save the post id for the user
+        });
 
         await User.findByIdAndUpdate(req.user._id, {
             $push: { posts: post._id }
-        })
+        });
 
-        //extarct username , name and profileImage from author
+        const populatedPost = await Post.findById(post._id)
+            .populate("author", "name username profileImage");
 
-
-        const populatedPost = await Post.findById(post._id).populate('author', 'name username profileImage')
-
-        res.status(201).json({ message: "Post Created", post: populatedPost })
-
-
-
-
-
-
-
+        return res.status(201).json({
+            message: "Post Created",
+            post: populatedPost
+        });
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
-}
+};
 
-// get all posts
-// Fetch the latest posts for the home feed and populate author details so
-// the frontend can render the post card without making another user request.
 export const getPosts = async (req, res) => {
     try {
         const posts = await Post.find()
@@ -65,47 +61,43 @@ export const getPosts = async (req, res) => {
             posts
         });
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
 };
 
-// UpdateLikes
-
-
 export const updateLikes = async (req, res) => {
     try {
-        // get post id
-        const post = await Post.findById(req.params.id)
+        const post = await Post.findById(req.params.id);
 
         if (!post) {
-            return res.status(404).json({ message: 'No Post Found' })
+            return res.status(404).json({ message: "No Post Found" });
         }
 
-        const userId = req.user._id
-
-        const isAlreadyLiked = post.likes.some((id) => id.toString() === userId.toString())
+        const userId = req.user._id;
+        const isAlreadyLiked = post.likes.some(
+            (id) => id.toString() === userId.toString()
+        );
 
         if (isAlreadyLiked) {
-            post.likes.pull(userId)
+            post.likes.pull(userId);
         } else {
-            post.likes.push(userId)
+            post.likes.push(userId);
         }
 
-        await post.save()
+        await post.save();
 
         return res.status(200).json({
             message: isAlreadyLiked ? "Post Unliked" : "Post Liked",
             likes: post.likes.length,
             liked: !isAlreadyLiked
-        })
-
+        });
     } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" , error: error });
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
-}
-
-
-
-
-// delete post
+};
