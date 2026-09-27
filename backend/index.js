@@ -7,6 +7,7 @@ import cors from "cors";
 import userRoutes from "./routes/user.routes.js";
 import postRoutes from "./routes/post.routes.js";
 import reelRoutes from "./routes/reel.routes.js";
+import commentRoutes from "./routes/comment.routes.js";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(cookieParser());
 app.use("/users", userRoutes);
 app.use("/post", postRoutes);
 app.use("/reel", reelRoutes);
+app.use("/comment", commentRoutes);
 
 app.listen(port, () => {
     console.log(`Server Started at ${port}`);
