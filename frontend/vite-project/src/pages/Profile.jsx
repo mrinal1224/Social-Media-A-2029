@@ -17,7 +17,20 @@ function Profile() {
     const [previewImage, setPreviewImage] = useState('')
     const [editError, setEditError] = useState('')
     const [editLoading, setEditLoading] = useState(false)
+    const [profilePosts, setProfilePosts] = useState([])
+    const [postsLoading, setPostsLoading] = useState(true)
+    const [postsError, setPostsError] = useState('')
+    const [likeLoading, setLikeLoading] = useState({})
     const fileInputRef = useRef(null)
+
+    // REDUX TEACHING POINT:
+    // Home.jsx already keeps the feed in its own local "posts" state.
+    // Profile.jsx now keeps some of those SAME Post documents again in "profilePosts".
+    // If Post #123 is liked here, this local copy changes, but Home's local copy does not.
+    // If it is liked on Home, this copy does not know about that change either.
+    // The backend has one Post #123, but the frontend can now hold multiple unsynchronised copies.
+    // Do NOT fix this with Redux yet — this duplication is intentional so the next class can
+    // move shared post state into a single Redux store and demonstrate the problem Redux solves.
 
     const isOwnProfile = loggedInUser?.username === username
 
@@ -57,12 +70,69 @@ function Profile() {
     }, [username, isOwnProfile])
 
     useEffect(() => {
+        const fetchProfilePosts = async () => {
+            try {
+                setPostsLoading(true)
+                setPostsError('')
+
+                const response = await axiosInstance.get(`/post/user/${username}`)
+                setProfilePosts(response.data.posts || [])
+            } catch (error) {
+                console.error("Failed to fetch profile posts:", error)
+                setPostsError(
+                    error.response?.data?.message || "Unable to load posts."
+                )
+            } finally {
+                setPostsLoading(false)
+            }
+        }
+
+        fetchProfilePosts()
+    }, [username])
+
+    useEffect(() => {
         return () => {
             if (previewImage) {
                 URL.revokeObjectURL(previewImage)
             }
         }
     }, [previewImage])
+
+    const handleProfilePostLike = async (postId) => {
+        if (likeLoading[postId]) return
+
+        try {
+            setLikeLoading((prev) => ({ ...prev, [postId]: true }))
+
+            const response = await axiosInstance.post(`/post/likes/${postId}`)
+
+            // REDUX TEACHING POINT:
+            // We are updating ONLY Profile.jsx's copy of this post.
+            // Home.jsx may already have the same post inside its own local state, and that copy
+            // will stay stale until Home fetches again. Next class: centralise shared posts in Redux.
+            setProfilePosts((prev) =>
+                prev.map((post) => {
+                    if (post._id !== postId) return post
+
+                    const myId = loggedInUser?._id
+                    const currentLikes = post.likes || []
+
+                    return {
+                        ...post,
+                        likes: response.data.liked
+                            ? [...currentLikes, myId]
+                            : currentLikes.filter(
+                                (id) => (id?._id || id)?.toString() !== myId?.toString()
+                            )
+                    }
+                })
+            )
+        } catch (error) {
+            console.error("Profile post like failed:", error)
+        } finally {
+            setLikeLoading((prev) => ({ ...prev, [postId]: false }))
+        }
+    }
 
     const handleFollowToggle = async () => {
         try {
@@ -301,6 +371,68 @@ function Profile() {
                         ))
                     )}
                 </div>
+            </div>
+
+            <div className="mt-8 border-t border-gray-100 pt-6">
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">Posts</h2>
+                        <p className="text-xs text-gray-500">@{userData.username}'s posts</p>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-500">{profilePosts.length}</span>
+                </div>
+
+                {postsLoading ? (
+                    <p className="py-8 text-center text-sm text-gray-500">Loading posts...</p>
+                ) : postsError ? (
+                    <p className="py-8 text-center text-sm text-red-500">{postsError}</p>
+                ) : profilePosts.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center">
+                        <p className="text-sm font-semibold text-gray-700">No posts yet</p>
+                        <p className="mt-1 text-xs text-gray-400">Posts created by this user will appear here.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        {profilePosts.map((post) => {
+                            const likedByMe = (post.likes || []).some(
+                                (id) => (id?._id || id)?.toString() === loggedInUser?._id?.toString()
+                            )
+
+                            return (
+                                <article key={post._id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                                    {post.image && (
+                                        <img
+                                            src={post.image}
+                                            alt={post.caption || 'Post'}
+                                            className="max-h-[520px] w-full object-cover"
+                                        />
+                                    )}
+
+                                    <div className="p-4">
+                                        {post.caption && (
+                                            <p className="text-sm leading-6 text-gray-700">{post.caption}</p>
+                                        )}
+
+                                        <div className="mt-3 flex items-center justify-between">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleProfilePostLike(post._id)}
+                                                disabled={likeLoading[post._id]}
+                                                className={`text-sm font-semibold ${likedByMe ? 'text-red-500' : 'text-gray-500'} disabled:opacity-50`}
+                                            >
+                                                {likedByMe ? '♥' : '♡'} {post.likes?.length || 0}
+                                            </button>
+
+                                            <span className="text-xs text-gray-400">
+                                                {new Date(post.createdAt).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </article>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
 
             {isOwnProfile && isEditOpen && (
