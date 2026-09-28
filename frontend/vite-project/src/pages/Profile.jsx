@@ -21,6 +21,9 @@ function Profile() {
     const [postsLoading, setPostsLoading] = useState(true)
     const [postsError, setPostsError] = useState('')
     const [likeLoading, setLikeLoading] = useState({})
+    const [profileReels, setProfileReels] = useState([])
+    const [reelsLoading, setReelsLoading] = useState(true)
+    const [reelsError, setReelsError] = useState('')
     const fileInputRef = useRef(null)
 
     // REDUX TEACHING POINT:
@@ -88,6 +91,27 @@ function Profile() {
         }
 
         fetchProfilePosts()
+    }, [username])
+
+    useEffect(() => {
+        const fetchProfileReels = async () => {
+            try {
+                setReelsLoading(true)
+                setReelsError('')
+
+                const response = await axiosInstance.get(`/reel/user/${username}`)
+                setProfileReels(response.data.reels || [])
+            } catch (error) {
+                console.error("Failed to fetch profile reels:", error)
+                setReelsError(
+                    error.response?.data?.message || "Unable to load reels."
+                )
+            } finally {
+                setReelsLoading(false)
+            }
+        }
+
+        fetchProfileReels()
     }, [username])
 
     useEffect(() => {
@@ -428,6 +452,51 @@ function Profile() {
                                 </article>
                             )
                         })}
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-8 border-t border-gray-100 pt-6">
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">Reels</h2>
+                        <p className="text-xs text-gray-500">@{userData.username}'s reels</p>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-500">{profileReels.length}</span>
+                </div>
+
+                {reelsLoading ? (
+                    <p className="py-8 text-center text-sm text-gray-500">Loading reels...</p>
+                ) : reelsError ? (
+                    <p className="py-8 text-center text-sm text-red-500">{reelsError}</p>
+                ) : profileReels.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center">
+                        <p className="text-sm font-semibold text-gray-700">No reels yet</p>
+                        <p className="mt-1 text-xs text-gray-400">Reels created by this user will appear here.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {profileReels.map((reel) => (
+                            <article
+                                key={reel._id}
+                                className="group relative aspect-[9/16] overflow-hidden rounded-lg bg-black"
+                            >
+                                <video
+                                    src={reel.video}
+                                    controls
+                                    preload="metadata"
+                                    className="h-full w-full object-cover"
+                                />
+
+                                {reel.caption && (
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-8">
+                                        <p className="line-clamp-2 text-xs font-medium text-white">
+                                            {reel.caption}
+                                        </p>
+                                    </div>
+                                )}
+                            </article>
+                        ))}
                     </div>
                 )}
             </div>
