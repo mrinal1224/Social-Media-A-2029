@@ -70,7 +70,7 @@ export const getStories = async (req, res) => {
         // only get the stories of the users I am following
         // user - req.user._id
 
-        const allowedUsers = [req.user._id, ...[req.user.followings]]
+        const allowedUsers = [req.user._id, ...(req.user.followings || [])]
 
 
         const stories = await Story.find({
