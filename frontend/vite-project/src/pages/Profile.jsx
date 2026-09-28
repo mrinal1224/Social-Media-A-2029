@@ -306,23 +306,32 @@ function Profile() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto my-8 p-6 bg-white rounded-xl shadow-md border border-gray-100">
-            <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-gray-100">
+        <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
+            <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-violet-50 px-6 py-8 sm:px-10 sm:py-10">
+                    <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-indigo-100/70 blur-3xl"></div>
+                    <div className="absolute -bottom-20 left-24 h-44 w-44 rounded-full bg-violet-100/60 blur-3xl"></div>
+
+                    <div className="relative flex flex-col items-center gap-7 sm:flex-row sm:items-start">
                 <img
                     src={userData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=6366f1&color=fff`}
                     alt={userData.name || 'Profile'}
-                    className="w-28 h-28 rounded-full object-cover border-4 border-indigo-50 shadow-sm"
+                    className="h-32 w-32 rounded-full border-4 border-white object-cover shadow-lg ring-1 ring-slate-200"
                 />
 
-                <div className="text-center sm:text-left space-y-1">
-                    <h1 className="text-2xl font-bold text-gray-900">{userData.name}</h1>
-                    <p className="text-sm font-medium text-indigo-600">@{userData.username}</p>
-                    <p className="text-sm text-gray-500">{userData.email}</p>
+                        <div className="flex-1 text-center sm:text-left">
+                            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
+                                <div>
+                                    <h1 className="text-3xl font-black tracking-tight text-slate-900">{userData.name}</h1>
+                                    <p className="mt-1 text-sm font-semibold text-indigo-600">@{userData.username}</p>
+                                </div>
+                            </div>
+                            <p className="mt-3 text-sm text-slate-500">{userData.email}</p>
 
                     {isOwnProfile ? (
                         <button
                             onClick={openEditProfile}
-                            className="mt-3 px-5 py-2 rounded-lg border border-indigo-600 text-indigo-600 text-sm font-medium hover:bg-indigo-50"
+                            className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                         >
                             Edit Profile
                         </button>
@@ -330,22 +339,45 @@ function Profile() {
                         <button
                             onClick={handleFollowToggle}
                             disabled={actionLoading}
-                            className="mt-3 px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
+                            className="mt-5 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
                         >
                             {actionLoading ? 'Please wait...' : isFollowing ? 'Unfollow' : 'Follow'}
                         </button>
                     )}
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div className="py-4">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">About</h2>
-                <p className="text-gray-700 text-sm leading-relaxed">
-                    {userData.bio || "No bio available yet."}
-                </p>
-            </div>
+                <div className="px-6 py-6 sm:px-10">
+                    <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 text-center">
+                        <div className="px-4 py-4">
+                            <span className="block text-xl font-black text-slate-900">
+                                {profilePosts.length}
+                            </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Posts</span>
+                        </div>
+                        <div className="border-x border-slate-200 px-4 py-4">
+                            <span className="block text-xl font-black text-slate-900">
+                                {userData.followers?.length || 0}
+                            </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Followers</span>
+                        </div>
+                        <div className="px-4 py-4">
+                            <span className="block text-xl font-black text-slate-900">
+                                {userData.followings?.length || 0}
+                            </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Following</span>
+                        </div>
+                    </div>
 
-            <div className="flex justify-around items-center pt-4 border-t border-gray-100 text-center">
+                    <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+                        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">About</h2>
+                        <p className="mt-2 text-sm leading-6 text-slate-700">
+                            {userData.bio || "No bio available yet."}
+                        </p>
+                    </div>
+
+                    <div className="mt-6 flex justify-around items-center pt-4 border-t border-gray-100 text-center hidden">
                 <div className="flex-1">
                     <span className="block text-xl font-bold text-gray-900">
                         {userData.posts?.length ?? userData.postsCount ?? 0}
@@ -368,9 +400,9 @@ function Profile() {
                 </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-3">Followers</h3>
+                    <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                            <h3 className="mb-3 text-sm font-bold text-slate-800">Followers</h3>
                     {userData.followers?.length === 0 ? (
                         <p className="text-sm text-gray-500">No followers yet.</p>
                     ) : (
@@ -383,8 +415,8 @@ function Profile() {
                     )}
                 </div>
 
-                <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-3">Following</h3>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                            <h3 className="mb-3 text-sm font-bold text-slate-800">Following</h3>
                     {userData.followings?.length === 0 ? (
                         <p className="text-sm text-gray-500">Not following anyone yet.</p>
                     ) : (
@@ -398,15 +430,15 @@ function Profile() {
                 </div>
             </div>
 
-            <div className="mt-8 border-t border-gray-100 pt-6">
-                <div className="mb-5 flex border-b border-gray-200">
+                    <div className="mt-8 border-t border-slate-200 pt-6">
+                        <div className="mx-auto mb-6 flex max-w-md rounded-2xl bg-slate-100 p-1.5">
                     <button
                         type="button"
                         onClick={() => setActiveContentTab('posts')}
-                        className={`flex-1 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+                        className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                             activeContentTab === 'posts'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                                ? 'bg-white text-indigo-700 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800'
                         }`}
                     >
                         Posts
@@ -416,10 +448,10 @@ function Profile() {
                     <button
                         type="button"
                         onClick={() => setActiveContentTab('reels')}
-                        className={`flex-1 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+                        className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                             activeContentTab === 'reels'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                                ? 'bg-white text-indigo-700 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800'
                         }`}
                     >
                         Reels
@@ -438,7 +470,7 @@ function Profile() {
                             <p className="mt-1 text-xs text-gray-400">Posts created by this user will appear here.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             {profilePosts.map((post) => {
                                 const likedByMe = (post.likes || []).some(
                                     (id) => (id?._id || id)?.toString() === loggedInUser?._id?.toString()
@@ -447,7 +479,7 @@ function Profile() {
                                 return (
                                     <article
                                         key={post._id}
-                                        className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+                                        className="group relative aspect-square overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200"
                                     >
                                         {post.image ? (
                                             <img
@@ -487,11 +519,11 @@ function Profile() {
                             <p className="mt-1 text-xs text-gray-400">Reels created by this user will appear here.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             {profileReels.map((reel) => (
                                 <article
                                     key={reel._id}
-                                    className="group relative aspect-[9/16] overflow-hidden rounded-lg bg-black"
+                                    className="group relative aspect-[9/16] overflow-hidden rounded-2xl bg-black shadow-sm ring-1 ring-slate-200"
                                 >
                                     <video
                                         src={reel.video}
@@ -514,7 +546,7 @@ function Profile() {
                 )}
             </div>
 
-            {isOwnProfile && isEditOpen && (
+                    {isOwnProfile && isEditOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
                     <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
                         <div className="flex items-center justify-between mb-5">
@@ -633,7 +665,9 @@ function Profile() {
                         </form>
                     </div>
                 </div>
-            )}
+                    )}
+                </div>
+            </div>
         </div>
     )
 }
