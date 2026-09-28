@@ -9,6 +9,7 @@ import postRoutes from "./routes/post.routes.js";
 import reelRoutes from "./routes/reel.routes.js";
 import commentRoutes from "./routes/comment.routes.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
+import storyRoutes from "./routes/story.routes.js";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use("/users", userRoutes);
 app.use("/post", postRoutes);
 app.use("/reel", reelRoutes);
 app.use("/comment", commentRoutes);
+app.use('/story' , storyRoutes)
 
 app.use(errorMiddleware);
 
