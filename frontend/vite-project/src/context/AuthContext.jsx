@@ -12,7 +12,9 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
       try {
-        const response = await axiosInstance.get("/users/me");
+        const response = await axiosInstance.get("/users/me", {
+          timeout: 5000
+        });
         if (mounted) {
           setUser(response.data);
         }
