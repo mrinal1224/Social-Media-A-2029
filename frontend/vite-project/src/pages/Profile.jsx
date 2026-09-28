@@ -392,41 +392,38 @@ function Profile() {
                         <p className="mt-1 text-xs text-gray-400">Posts created by this user will appear here.</p>
                     </div>
                 ) : (
-                    <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         {profilePosts.map((post) => {
                             const likedByMe = (post.likes || []).some(
                                 (id) => (id?._id || id)?.toString() === loggedInUser?._id?.toString()
                             )
 
                             return (
-                                <article key={post._id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                                    {post.image && (
+                                <article
+                                    key={post._id}
+                                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+                                >
+                                    {post.image ? (
                                         <img
                                             src={post.image}
                                             alt={post.caption || 'Post'}
-                                            className="max-h-[520px] w-full object-cover"
+                                            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                         />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm font-medium text-gray-500">
+                                            {post.caption || 'Post'}
+                                        </div>
                                     )}
 
-                                    <div className="p-4">
-                                        {post.caption && (
-                                            <p className="text-sm leading-6 text-gray-700">{post.caption}</p>
-                                        )}
-
-                                        <div className="mt-3 flex items-center justify-between">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleProfilePostLike(post._id)}
-                                                disabled={likeLoading[post._id]}
-                                                className={`text-sm font-semibold ${likedByMe ? 'text-red-500' : 'text-gray-500'} disabled:opacity-50`}
-                                            >
-                                                {likedByMe ? '♥' : '♡'} {post.likes?.length || 0}
-                                            </button>
-
-                                            <span className="text-xs text-gray-400">
-                                                {new Date(post.createdAt).toLocaleString()}
-                                            </span>
-                                        </div>
+                                    <div className="absolute inset-0 flex items-center justify-center gap-4 bg-black/0 opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleProfilePostLike(post._id)}
+                                            disabled={likeLoading[post._id]}
+                                            className="rounded-full bg-white/95 px-3 py-2 text-sm font-bold text-gray-900 shadow disabled:opacity-60"
+                                        >
+                                            {likedByMe ? '♥' : '♡'} {post.likes?.length || 0}
+                                        </button>
                                     </div>
                                 </article>
                             )
