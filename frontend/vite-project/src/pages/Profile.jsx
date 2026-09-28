@@ -22,6 +22,7 @@ function Profile() {
     const [postsError, setPostsError] = useState('')
     const [likeLoading, setLikeLoading] = useState({})
     const [profileReels, setProfileReels] = useState([])
+    const [activeContentTab, setActiveContentTab] = useState('posts')
     const [reelsLoading, setReelsLoading] = useState(true)
     const [reelsError, setReelsError] = useState('')
     const fileInputRef = useRef(null)
@@ -398,106 +399,118 @@ function Profile() {
             </div>
 
             <div className="mt-8 border-t border-gray-100 pt-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900">Posts</h2>
-                        <p className="text-xs text-gray-500">@{userData.username}'s posts</p>
-                    </div>
-                    <span className="text-sm font-semibold text-gray-500">{profilePosts.length}</span>
+                <div className="mb-5 flex border-b border-gray-200">
+                    <button
+                        type="button"
+                        onClick={() => setActiveContentTab('posts')}
+                        className={`flex-1 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+                            activeContentTab === 'posts'
+                                ? 'border-indigo-600 text-indigo-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                        }`}
+                    >
+                        Posts
+                        <span className="ml-2 text-xs text-gray-400">{profilePosts.length}</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveContentTab('reels')}
+                        className={`flex-1 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+                            activeContentTab === 'reels'
+                                ? 'border-indigo-600 text-indigo-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                        }`}
+                    >
+                        Reels
+                        <span className="ml-2 text-xs text-gray-400">{profileReels.length}</span>
+                    </button>
                 </div>
 
-                {postsLoading ? (
-                    <p className="py-8 text-center text-sm text-gray-500">Loading posts...</p>
-                ) : postsError ? (
-                    <p className="py-8 text-center text-sm text-red-500">{postsError}</p>
-                ) : profilePosts.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center">
-                        <p className="text-sm font-semibold text-gray-700">No posts yet</p>
-                        <p className="mt-1 text-xs text-gray-400">Posts created by this user will appear here.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {profilePosts.map((post) => {
-                            const likedByMe = (post.likes || []).some(
-                                (id) => (id?._id || id)?.toString() === loggedInUser?._id?.toString()
-                            )
+                {activeContentTab === 'posts' ? (
+                    postsLoading ? (
+                        <p className="py-8 text-center text-sm text-gray-500">Loading posts...</p>
+                    ) : postsError ? (
+                        <p className="py-8 text-center text-sm text-red-500">{postsError}</p>
+                    ) : profilePosts.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center">
+                            <p className="text-sm font-semibold text-gray-700">No posts yet</p>
+                            <p className="mt-1 text-xs text-gray-400">Posts created by this user will appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {profilePosts.map((post) => {
+                                const likedByMe = (post.likes || []).some(
+                                    (id) => (id?._id || id)?.toString() === loggedInUser?._id?.toString()
+                                )
 
-                            return (
+                                return (
+                                    <article
+                                        key={post._id}
+                                        className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+                                    >
+                                        {post.image ? (
+                                            <img
+                                                src={post.image}
+                                                alt={post.caption || 'Post'}
+                                                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm font-medium text-gray-500">
+                                                {post.caption || 'Post'}
+                                            </div>
+                                        )}
+
+                                        <div className="absolute inset-0 flex items-center justify-center gap-4 bg-black/0 opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleProfilePostLike(post._id)}
+                                                disabled={likeLoading[post._id]}
+                                                className="rounded-full bg-white/95 px-3 py-2 text-sm font-bold text-gray-900 shadow disabled:opacity-60"
+                                            >
+                                                {likedByMe ? '♥' : '♡'} {post.likes?.length || 0}
+                                            </button>
+                                        </div>
+                                    </article>
+                                )
+                            })}
+                        </div>
+                    )
+                ) : (
+                    reelsLoading ? (
+                        <p className="py-8 text-center text-sm text-gray-500">Loading reels...</p>
+                    ) : reelsError ? (
+                        <p className="py-8 text-center text-sm text-red-500">{reelsError}</p>
+                    ) : profileReels.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center">
+                            <p className="text-sm font-semibold text-gray-700">No reels yet</p>
+                            <p className="mt-1 text-xs text-gray-400">Reels created by this user will appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {profileReels.map((reel) => (
                                 <article
-                                    key={post._id}
-                                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+                                    key={reel._id}
+                                    className="group relative aspect-[9/16] overflow-hidden rounded-lg bg-black"
                                 >
-                                    {post.image ? (
-                                        <img
-                                            src={post.image}
-                                            alt={post.caption || 'Post'}
-                                            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <div className="flex h-full w-full items-center justify-center p-4 text-center text-sm font-medium text-gray-500">
-                                            {post.caption || 'Post'}
+                                    <video
+                                        src={reel.video}
+                                        controls
+                                        preload="metadata"
+                                        className="h-full w-full object-cover"
+                                    />
+
+                                    {reel.caption && (
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-8">
+                                            <p className="line-clamp-2 text-xs font-medium text-white">
+                                                {reel.caption}
+                                            </p>
                                         </div>
                                     )}
-
-                                    <div className="absolute inset-0 flex items-center justify-center gap-4 bg-black/0 opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleProfilePostLike(post._id)}
-                                            disabled={likeLoading[post._id]}
-                                            className="rounded-full bg-white/95 px-3 py-2 text-sm font-bold text-gray-900 shadow disabled:opacity-60"
-                                        >
-                                            {likedByMe ? '♥' : '♡'} {post.likes?.length || 0}
-                                        </button>
-                                    </div>
                                 </article>
-                            )
-                        })}
-                    </div>
-                )}
-            </div>
-
-            <div className="mt-8 border-t border-gray-100 pt-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900">Reels</h2>
-                        <p className="text-xs text-gray-500">@{userData.username}'s reels</p>
-                    </div>
-                    <span className="text-sm font-semibold text-gray-500">{profileReels.length}</span>
-                </div>
-
-                {reelsLoading ? (
-                    <p className="py-8 text-center text-sm text-gray-500">Loading reels...</p>
-                ) : reelsError ? (
-                    <p className="py-8 text-center text-sm text-red-500">{reelsError}</p>
-                ) : profileReels.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center">
-                        <p className="text-sm font-semibold text-gray-700">No reels yet</p>
-                        <p className="mt-1 text-xs text-gray-400">Reels created by this user will appear here.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {profileReels.map((reel) => (
-                            <article
-                                key={reel._id}
-                                className="group relative aspect-[9/16] overflow-hidden rounded-lg bg-black"
-                            >
-                                <video
-                                    src={reel.video}
-                                    controls
-                                    preload="metadata"
-                                    className="h-full w-full object-cover"
-                                />
-
-                                {reel.caption && (
-                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-8">
-                                        <p className="line-clamp-2 text-xs font-medium text-white">
-                                            {reel.caption}
-                                        </p>
-                                    </div>
-                                )}
-                            </article>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )
                 )}
             </div>
 
