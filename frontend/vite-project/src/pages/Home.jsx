@@ -255,7 +255,7 @@ function Home() {
   const handleAddComment = async (event, type, id) => {
     event.preventDefault();
 
-    const key = getItemKey(type, id);
+    const key = getItemKey(type, id); // reel or post
     const text = commentInputs[key]?.trim();
 
     if (!text) return;
