@@ -3,14 +3,6 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosCalls/axios";
 import { useAuth } from "../context/AuthContext";
 
-const stories = [
-  { name: "Your Story", initials: "You", tone: "from-indigo-500 to-violet-500" },
-  { name: "Ananya", initials: "AN", tone: "from-pink-500 to-rose-500" },
-  { name: "Rohan", initials: "RO", tone: "from-cyan-500 to-blue-500" },
-  { name: "Priya", initials: "PR", tone: "from-amber-400 to-orange-500" },
-  { name: "Arjun", initials: "AR", tone: "from-emerald-400 to-teal-500" },
-];
-
 function Avatar({ initials, tone = "from-slate-700 to-slate-900", size = "h-11 w-11" }) {
   return (
     <div className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${tone} text-xs font-bold text-white ring-2 ring-white`}>
@@ -28,6 +20,13 @@ function Home() {
   const [reels, setReels] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState("");
+  const [stories, setStories] = useState([]);
+  const [storyLoading, setStoryLoading] = useState(true);
+  const [storyError, setStoryError] = useState("");
+  const [storyFile, setStoryFile] = useState(null);
+  const [storyCaption, setStoryCaption] = useState("");
+  const [storyCreating, setStoryCreating] = useState(false);
+  const [activeStory, setActiveStory] = useState(null);
 
   // CREATE FLOW STATE:
   // One simple composer supports both posts and reels.
@@ -100,6 +99,60 @@ function Home() {
 
     loadFeed();
   }, []);
+
+  // STORIES:
+  // Fetch active stories from people the current user follows.
+  useEffect(() => {
+    const fetchStories = async () => {
+      try {
+        setStoryLoading(true);
+        setStoryError("");
+        const response = await axiosInstance.get("/story/getStories");
+        setStories(response.data.stories || []);
+      } catch (error) {
+        console.error("Stories fetch failed:", error);
+        setStoryError(error.response?.data?.message || "Unable to load stories.");
+      } finally {
+        setStoryLoading(false);
+      }
+    };
+
+    fetchStories();
+  }, []);
+
+  const handleCreateStory = async (event) => {
+    event.preventDefault();
+
+    if (!storyFile) {
+      setStoryError("Please select an image for your story.");
+      return;
+    }
+
+    try {
+      setStoryCreating(true);
+      setStoryError("");
+
+      const formData = new FormData();
+      formData.append("caption", storyCaption.trim());
+      formData.append("image", storyFile);
+
+      const response = await axiosInstance.post("/story/createStory", formData);
+      setStories((prevStories) => [response.data.story, ...prevStories]);
+      setStoryFile(null);
+      setStoryCaption("");
+      event.target.reset();
+    } catch (error) {
+      console.error("Story creation failed:", error);
+      setStoryError(error.response?.data?.message || "Unable to create story.");
+    } finally {
+      setStoryCreating(false);
+    }
+  };
+
+  const getStoryLabel = (story) => {
+    if (story.author?._id === user?._id) return "Your Story";
+    return story.author?.username || "Story";
+  };
 
   // CREATE POST / REEL:
   // We send FormData because both backend create routes accept an uploaded file.
@@ -512,17 +565,77 @@ function Home() {
               </div>
               <button className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600">Latest ↓</button>
             </div>
-            <div className="flex gap-4 overflow-x-auto border-t border-slate-100 px-5 py-4 scrollbar-hide">
-              {stories.map((story, index) => (
-                <button key={story.name} className="group flex w-[76px] shrink-0 flex-col items-center gap-2">
-                  <div className={`rounded-full bg-gradient-to-br ${story.tone} p-[3px] transition group-hover:scale-105`}>
-                    <div className="rounded-full bg-white p-[2px]">
-                      <Avatar initials={index === 0 ? getInitials(user?.name) : story.initials} tone={story.tone} size="h-12 w-12" />
-                    </div>
-                  </div>
-                  <span className="w-full truncate text-center text-[11px] font-semibold text-slate-600">{index === 0 ? "Your Story" : story.name}</span>
+            <div className="border-t border-slate-100 px-5 py-4">
+              <form onSubmit={handleCreateStory} className="mb-4 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={storyCaption}
+                  onChange={(event) => setStoryCaption(event.target.value)}
+                  maxLength={200}
+                  placeholder="Story caption"
+                  className="min-w-0 flex-1 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:bg-slate-100"
+                />
+                <label className="cursor-pointer rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  {storyFile ? storyFile.name : "Choose Story Image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      if (!file.type.startsWith("image/")) {
+                        setStoryError("Please select a valid image.");
+                        event.target.value = "";
+                        return;
+                      }
+                      setStoryFile(file);
+                      setStoryError("");
+                    }}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={storyCreating}
+                  className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  {storyCreating ? "Sharing..." : "Add Story"}
                 </button>
-              ))}
+              </form>
+
+              {storyError && <p className="mb-3 text-xs text-red-500">{storyError}</p>}
+
+              {storyLoading ? (
+                <p className="text-xs text-slate-400">Loading stories...</p>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+                  {stories.map((story) => (
+                    <button
+                      key={story._id}
+                      type="button"
+                      onClick={() => setActiveStory(story)}
+                      className="group flex w-[76px] shrink-0 flex-col items-center gap-2"
+                    >
+                      <div className="rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 p-[3px] transition group-hover:scale-105">
+                        <div className="rounded-full bg-white p-[2px]">
+                          <img
+                            src={story.author?.profileImage || story.image}
+                            alt={story.author?.username || "Story"}
+                            className="h-12 w-12 rounded-full object-cover"
+                          />
+                        </div>
+                      </div>
+                      <span className="w-full truncate text-center text-[11px] font-semibold text-slate-600">
+                        {getStoryLabel(story)}
+                      </span>
+                    </button>
+                  ))}
+
+                  {stories.length === 0 && (
+                    <p className="text-xs text-slate-400">No active stories yet.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -742,6 +855,51 @@ function Home() {
           </div>
         </aside>
       </main>
+
+      {activeStory && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setActiveStory(null)}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-3xl bg-black shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between bg-black px-4 py-3 text-white">
+              <div className="flex items-center gap-3">
+                <img
+                  src={activeStory.author?.profileImage || activeStory.image}
+                  alt={activeStory.author?.username || "Story"}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+                <div>
+                  <p className="text-sm font-bold">{getStoryLabel(activeStory)}</p>
+                  <p className="text-[11px] text-white/60">
+                    {new Date(activeStory.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveStory(null)}
+                className="rounded-full px-3 py-1 text-xl text-white/80 hover:bg-white/10"
+              >
+                ×
+              </button>
+            </div>
+
+            <img
+              src={activeStory.image}
+              alt={activeStory.caption || "Story"}
+              className="max-h-[75vh] w-full bg-black object-contain"
+            />
+
+            {activeStory.caption && (
+              <p className="bg-black px-4 py-4 text-sm text-white">{activeStory.caption}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
