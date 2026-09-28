@@ -1,7 +1,9 @@
 // Create a Story
 
 import Story from "../models/Story.model.js"
+import User from "../models/user.model.js"
 import uploadToCloudinary from "../utils/uploadToCloudinary.js"
+
 
 
 
@@ -39,9 +41,18 @@ export const createStory = async (req, res) => {
             expiresAt: new Date(Date.now() + STORY_LIFETIME)
         })
 
+        // add story id inside user collection 
+
+        await User.findByIdAndUpdate(req.user._id, {
+            $push: { stories: story._id }
+        });
+
+        const populatedStory = await Story.findById(story._id)
+        .populate("author", "username profileImage");
 
 
-        res.status(201).json({ message: "Story Created", story: story })} 
+
+        res.status(201).json({ message: "Story Created", story: populatedStory })} 
         
         catch (error) {
         return res.status(500).json({
@@ -52,6 +63,19 @@ export const createStory = async (req, res) => {
 
 }
 // Get the Stories
+
+export const getStories = (req , res)=>{
+    try {
+        // only get the stories of the users I am following
+
+        
+
+        // 
+        
+    } catch (error) {
+        
+    }
+}
 
 
 
