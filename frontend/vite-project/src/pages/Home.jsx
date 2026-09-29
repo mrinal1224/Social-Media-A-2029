@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosCalls/axios";
 import { useAuth } from "../context/AuthContext";
+import { setPostAction } from "../redux/postSlice.js";
+import { useDispatch } from "react-redux";
+
+
 
 function Avatar({ initials, tone = "from-slate-700 to-slate-900", size = "h-11 w-11" }) {
   return (
@@ -46,6 +50,8 @@ function Home() {
   const [likeLoading, setLikeLoading] = useState({});
   const [interactionError, setInteractionError] = useState({});
 
+ let dispatch = useDispatch()
+
   const getItemKey = (type, id) => `${type}-${id}`;
 
   const isLikedByCurrentUser = (item) => {
@@ -65,6 +71,8 @@ function Home() {
       try {
         const response = await axiosInstance.get("/post");
         setPosts(response.data.posts || []);
+        dispatch(setPostAction(response.data.posts))
+          
       } catch (error) {
         console.error("Posts fetch failed:", error);
         setFeedError(
