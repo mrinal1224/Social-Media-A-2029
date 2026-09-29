@@ -71,7 +71,7 @@ function Home() {
       try {
         const response = await axiosInstance.get("/post");
         setPosts(response.data.posts || []);
-        dispatch(setPostAction(response.data.posts))
+        dispatch(setPostAction(response.data.posts)) // dispatcher
           
       } catch (error) {
         console.error("Posts fetch failed:", error);
