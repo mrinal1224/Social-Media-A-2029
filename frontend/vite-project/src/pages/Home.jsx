@@ -4,6 +4,7 @@ import axiosInstance from "../axiosCalls/axios";
 import { useAuth } from "../context/AuthContext";
 import { setPostAction } from "../redux/postSlice.js";
 import { useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
 
 
 
@@ -50,7 +51,7 @@ function Home() {
   const [likeLoading, setLikeLoading] = useState({});
   const [interactionError, setInteractionError] = useState({});
 
- let dispatch = useDispatch()
+  let dispatch = useDispatch()
 
   const getItemKey = (type, id) => `${type}-${id}`;
 
@@ -72,7 +73,7 @@ function Home() {
         const response = await axiosInstance.get("/post");
         setPosts(response.data.posts || []);
         dispatch(setPostAction(response.data.posts)) // dispatcher
-          
+
       } catch (error) {
         console.error("Posts fetch failed:", error);
         setFeedError(
@@ -398,11 +399,10 @@ function Home() {
             type="button"
             onClick={() => handleLike(type, item._id)}
             disabled={likeLoading[key]}
-            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-              liked
+            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${liked
                 ? "text-rose-600 hover:bg-rose-50"
                 : "text-slate-600 hover:bg-slate-50"
-            }`}
+              }`}
           >
             {liked ? "♥ Liked" : "♡ Like"}
           </button>
@@ -528,13 +528,13 @@ function Home() {
 
           <div className="flex items-center gap-2">
             <button className="rounded-full p-2.5 text-slate-500 transition hover:bg-slate-100" aria-label="Notifications">♡</button>
-            <button
-              onClick={() => navigate(`/profile/${user?.username}`)}
+            <Link
+              to={`/profile/${user?.username}`}
               className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300 hover:shadow-sm"
             >
               <Avatar initials={getInitials(user?.name)} tone="from-indigo-500 to-violet-500" size="h-8 w-8" />
               <span className="hidden text-sm font-semibold sm:block">{user?.name || "You"}</span>
-            </button>
+            </Link>
             <button onClick={handleLogout} className="hidden rounded-full px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:block">Logout</button>
           </div>
         </div>
