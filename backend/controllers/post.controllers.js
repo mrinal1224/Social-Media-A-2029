@@ -1,18 +1,18 @@
-import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
+import uploadToCloudinary from "../utils/uploadToCloudinary.js";
 
-export const createPost = async (req, res) => {
+export const createPost = async (req, res, next) => {
     try {
-        const caption = req.body.caption?.trim() || "";
+        const { caption } = req.body;
 
-        if (!caption && !req.file) {
+        if (!caption?.trim() && !req.file) {
             return res.status(400).json({
                 message: "Add a caption or upload an image"
             });
         }
 
-        if (caption.length > 500) {
+        if (caption && caption.trim().length > 500) {
             return res.status(400).json({
                 message: "Caption cannot exceed 500 characters"
             });
@@ -27,7 +27,7 @@ export const createPost = async (req, res) => {
 
         const post = await Post.create({
             author: req.user._id,
-            caption,
+            caption: caption?.trim() || "",
             image
         });
 
@@ -39,37 +39,31 @@ export const createPost = async (req, res) => {
             .populate("author", "name username profileImage");
 
         return res.status(201).json({
-            message: "Post Created",
+            message: "Post created successfully",
             post: populatedPost
         });
     } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error",
-            error: error.message
-        });
+        next(error);
     }
 };
 
-export const getPosts = async (req, res) => {
+export const getFeed = async (req, res, next) => {
     try {
         const posts = await Post.find()
-            .populate("author", "name username profileImage")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .populate("author", "name username profileImage");
 
         return res.status(200).json({
-            message: "Posts fetched successfully",
+            message: "Feed fetched successfully",
             posts
         });
     } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error",
-            error: error.message
-        });
+        next(error);
     }
 };
 
 
-export const getPostsByUsername = async (req, res) => {
+export const getPostsByUsername = async (req, res, next) => {
     try {
         const user = await User.findOne({ username: req.params.username }).select("_id");
 
@@ -80,35 +74,35 @@ export const getPostsByUsername = async (req, res) => {
         }
 
         const posts = await Post.find({ author: user._id })
-            .populate("author", "name username profileImage")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .populate("author", "name username profileImage");
 
         return res.status(200).json({
             message: "User posts fetched successfully",
             posts
         });
     } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error",
-            error: error.message
-        });
+        next(error);
     }
 };
 
-export const updateLikes = async (req, res) => {
+
+export const togglePostLike = async (req, res, next) => {
     try {
         const post = await Post.findById(req.params.id);
 
         if (!post) {
-            return res.status(404).json({ message: "No Post Found" });
+            return res.status(404).json({
+                message: "Post not found"
+            });
         }
 
         const userId = req.user._id;
-        const isAlreadyLiked = post.likes.some(
+        const alreadyLiked = post.likes.some(
             (id) => id.toString() === userId.toString()
         );
 
-        if (isAlreadyLiked) {
+        if (alreadyLiked) {
             post.likes.pull(userId);
         } else {
             post.likes.push(userId);
@@ -117,14 +111,11 @@ export const updateLikes = async (req, res) => {
         await post.save();
 
         return res.status(200).json({
-            message: isAlreadyLiked ? "Post Unliked" : "Post Liked",
-            likes: post.likes.length,
-            liked: !isAlreadyLiked
+            message: alreadyLiked ? "Post unliked" : "Post liked",
+            liked: !alreadyLiked,
+            likesCount: post.likes.length
         });
     } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error",
-            error: error.message
-        });
+        next(error);
     }
 };
