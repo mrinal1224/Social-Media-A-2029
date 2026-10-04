@@ -6,11 +6,12 @@ import { useAuth } from '../context/AuthContext'
 import { fetchPostsByUsername, selectPostsByUsername, updatePostLike } from '../redux/postsSlice'
 import { fetchReelsByUsername, selectReelsByUsername } from '../redux/reelsSlice'
 import { fetchProfileByUsername, removeProfileKey, selectProfileByUsername, upsertProfile } from '../redux/profilesSlice'
+import { addFollowing, patchCurrentUser, removeFollowing } from '../redux/authSlice'
 
 function Profile() {
     const { username } = useParams()
     const navigate = useNavigate()
-    const { user: loggedInUser, setUser } = useAuth()
+    const { user: loggedInUser } = useAuth()
 
     // REDUX STEP 9: PROFILE READS THE SAME STORE AS HOME
     //
@@ -104,7 +105,11 @@ function Profile() {
                 await axiosInstance.post(`/users/${userData._id}/follow`)
             }
 
-            setIsFollowing((prev) => !prev)
+            if (isFollowing) {
+                dispatch(removeFollowing(userData._id))
+            } else {
+                dispatch(addFollowing(userData._id))
+            }
             dispatch(fetchProfileByUsername(username))
         } catch (error) {
             console.error("Follow action failed:", error)
@@ -202,10 +207,7 @@ function Profile() {
             const updatedUser = response.data.user
 
             dispatch(upsertProfile(updatedUser))
-            setUser({
-                ...loggedInUser,
-                ...updatedUser
-            })
+            dispatch(patchCurrentUser(updatedUser))
 
             const usernameChanged = updatedUser.username !== username
 
