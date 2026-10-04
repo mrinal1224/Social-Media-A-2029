@@ -7,32 +7,21 @@ const storySchema = new mongoose.Schema(
             ref: "User",
             required: true
         },
+        image: {
+            type: String,
+            required: true
+        },
         caption: {
             type: String,
             trim: true,
-            maxlength: 500
+            maxlength: 300
         },
-        image: {
-            type: String
-        },
-        likes: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                // 123
-                ref: "User"
-            }
-        ],
-
-
-        expiresAt:{
-            type : Date,
-            required : true
+        expiresAt: {
+            type: Date,
+            required: true
         }
     },
     { timestamps: true }
-
-
-
 );
 
 const Story = mongoose.model("Story", storySchema);
