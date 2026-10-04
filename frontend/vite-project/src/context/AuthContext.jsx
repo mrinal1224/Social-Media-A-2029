@@ -12,9 +12,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
       try {
-        const response = await axiosInstance.get("/users/me", {
-          timeout: 5000
-        });
+        const response = await axiosInstance.get("/users/me");
         if (mounted) {
           setUser(response.data);
         }
@@ -41,6 +39,7 @@ export const AuthProvider = ({ children }) => {
       await axiosInstance.post("/users/logout");
     } finally {
       setUser(null);
+      setLoading(false);
     }
   };
 
