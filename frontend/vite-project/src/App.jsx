@@ -25,7 +25,12 @@ function App() {
     // These functions run when Socket.IO tells us that the connection
     // has been established or disconnected.
     const handleConnect = () => {
+
       console.log('Socket connected:', socket.id)
+
+      socket.emit('hello' , "Hello from the Client")
+
+
     }
 
     const handleDisconnect = () => {
