@@ -37,10 +37,15 @@ function App() {
       console.log('Socket disconnected')
     }
 
+    const handleHelloResponse = (message) => {
+      console.log("Server Says -> " + message)
+    }
+
     // Register listeners BEFORE calling connect().
     // This way we are already listening when the first connection succeeds.
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
+    socket.on('hello-response' , handleHelloResponse)
 
     // socket.js uses autoConnect: false, so importing the socket does not
     // connect automatically. React explicitly starts the connection here.

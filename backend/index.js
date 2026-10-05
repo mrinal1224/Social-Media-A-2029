@@ -88,14 +88,14 @@ io.on("connection", (socket) => {
     // "hello" is not a built-in Socket.IO event. We chose this event name.
     // The client sends data with socket.emit("hello", data), and this listener
     // receives that data on the server.
-    socket.on("connection", (message) => {
+    socket.on("hello", (message) => {
         
         console.log("Client says:", message);
 
         // Send a custom event back only to the client that sent "hello".
         // This demonstrates the basic Socket.IO pattern:
         // emit -> network -> on
-        // socket.emit("hello-response", "Hello from the server!");
+        socket.emit("hello-response", "Hello from the server!");
     });
 
     socket.on("disconnect", () => {
