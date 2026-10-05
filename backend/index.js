@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 import userRoutes from "./routes/user.routes.js";
 import postRoutes from "./routes/post.routes.js";
@@ -36,6 +38,16 @@ if (missingEnvVars.length > 0) {
 }
 
 const app = express();
+const httpServer = createServer(app);
+
+
+
+const io = new Server(httpServer, {
+    cors: {
+        origin: "http://localhost:5173",
+        credentials: true
+    }
+});
 const port = 8084;
 
 mongoose.connect(process.env.dbURL)
@@ -49,7 +61,7 @@ mongoose.connect(process.env.dbURL)
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
-}));
+})); // this is for our express server
 
 app.use(express.json());
 app.use(cookieParser());
@@ -62,6 +74,32 @@ app.use("/stories", storyRoutes);
 
 app.use(errorMiddleware);
 
-app.listen(port, () => {
+io.on("connection", (socket) => {
+    console.log("Socket connected:", socket.id);
+
+    // SOCKET.IO STEP 3: RECEIVE OUR FIRST CUSTOM EVENT
+    //
+    // "hello" is not a built-in Socket.IO event. We chose this event name.
+    // The client sends data with socket.emit("hello", data), and this listener
+    // receives that data on the server.
+    socket.on("hello", (message) => {
+        console.log("Client says:", message);
+
+        // Send a custom event back only to the client that sent "hello".
+        // This demonstrates the basic Socket.IO pattern:
+        // emit -> network -> on
+        socket.emit("hello-response", "Hello from the server!");
+    });
+
+    socket.on("disconnect", () => {
+        console.log("Socket disconnected:", socket.id);
+    });
+});
+
+
+
+
+
+httpServer.listen(port, () => {
     console.log(`Server Started at ${port}`);
 });
