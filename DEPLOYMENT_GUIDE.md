@@ -551,4 +551,695 @@ VITE_API_URL=http://localhost:8084
 
 For local development you can create:
 
-``
+```text
+.env
+```
+
+containing:
+
+```env
+VITE_API_URL=http://localhost:8084
+```
+
+Remember:
+
+> Variables exposed to Vite must start with `VITE_`.
+
+---
+
+# 13. Fix React Router Refresh on Vercel
+
+This application uses:
+
+```js
+<BrowserRouter>
+```
+
+with routes such as:
+
+```text
+/home
+/profile/:username
+/login
+/signup
+```
+
+Without an SPA rewrite, opening:
+
+```text
+https://your-app.vercel.app/profile/mrinal
+```
+
+directly may produce a `404`.
+
+Inside:
+
+```text
+frontend/vite-project/
+```
+
+create:
+
+```text
+vercel.json
+```
+
+with:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+Commit this file.
+
+---
+
+# 14. Commit the Deployment Changes
+
+Once everything works locally:
+
+```bash
+git add .
+git commit -m "Prepare project for deployment"
+git push origin main
+```
+
+Do not continue until the latest deployment-related code exists on GitHub.
+
+---
+
+# 15. Create a Free MongoDB Atlas Database
+
+Go to MongoDB Atlas and create an account.
+
+Create a project and then create a free cluster.
+
+The exact Atlas UI may change, but the important steps remain the same.
+
+---
+
+## 15.1 Create a Database User
+
+Create a database username and password.
+
+Example:
+
+```text
+Username:
+socialappuser
+
+Password:
+Use-A-Strong-Password
+```
+
+Do not use your Atlas account password as your database password.
+
+Do not push the database password to GitHub.
+
+---
+
+## 15.2 Configure Network Access
+
+MongoDB Atlas only allows connections from permitted networks.
+
+For a classroom/student deployment using a cloud host with changing outbound IP addresses, the simplest demo setup is usually:
+
+```text
+0.0.0.0/0
+```
+
+This means:
+
+```text
+Allow connection attempts from any IP
+```
+
+### Important
+
+This does **not** mean anyone can automatically access your database.
+
+They still need:
+
+```text
+database username
++
+database password
+```
+
+However, `0.0.0.0/0` is less restrictive than allowing only specific IP addresses.
+
+It is acceptable for a classroom/demo project, but production systems should use stricter network controls whenever possible.
+
+---
+
+# 16. Get the MongoDB Connection String
+
+From Atlas:
+
+```text
+Database
+→ Connect
+→ Drivers
+→ Node.js
+```
+
+You will receive something similar to:
+
+```text
+mongodb+srv://USERNAME:PASSWORD@cluster.mongodb.net/
+```
+
+Add your database name:
+
+```text
+mongodb+srv://USERNAME:PASSWORD@cluster.mongodb.net/social_media
+```
+
+This becomes:
+
+```env
+dbURL=mongodb+srv://...
+```
+
+### Common MongoDB Password Problem
+
+If your database password contains characters such as:
+
+```text
+@
+:
+/
+#
+%
+```
+
+they may need URL encoding inside the connection string.
+
+For beginner projects, using a strong password containing letters and numbers can avoid accidental URI parsing issues.
+
+---
+
+# 17. Configure Cloudinary
+
+Create a Cloudinary account.
+
+From the Cloudinary dashboard/API Keys section, obtain:
+
+```text
+Cloud Name
+API Key
+API Secret
+```
+
+They map to:
+
+```env
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+Never expose:
+
+```text
+CLOUDINARY_API_SECRET
+```
+
+inside React code.
+
+Cloudinary secrets belong only on the backend.
+
+---
+
+# 18. Create a JWT Secret
+
+You need a strong secret for signing JWTs.
+
+A simple way to generate one is:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+Copy the generated string.
+
+Use it as:
+
+```env
+JWT_SECRET=your-generated-secret
+```
+
+Do not use:
+
+```env
+JWT_SECRET=secret
+```
+
+or:
+
+```env
+JWT_SECRET=12345
+```
+
+---
+
+# 19. Deploy the Backend on Render
+
+Now deploy the Express + Socket.IO server first.
+
+Go to Render.
+
+Choose:
+
+```text
+New
+→ Web Service
+```
+
+Connect your GitHub account.
+
+Select your project repository.
+
+---
+
+# 20. Render Backend Configuration
+
+Because the backend exists inside:
+
+```text
+backend/
+```
+
+configure:
+
+```text
+Root Directory
+backend
+```
+
+Use:
+
+```text
+Runtime
+Node
+```
+
+Build command:
+
+```bash
+npm install
+```
+
+Start command:
+
+```bash
+npm start
+```
+
+Select the free instance if available for your student account.
+
+---
+
+# 21. Add Render Environment Variables
+
+Open:
+
+```text
+Render Service
+→ Environment
+```
+
+Add:
+
+```env
+dbURL=YOUR_MONGODB_ATLAS_CONNECTION_STRING
+
+JWT_SECRET=YOUR_JWT_SECRET
+
+CLOUDINARY_CLOUD_NAME=YOUR_CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY=YOUR_CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET=YOUR_CLOUDINARY_API_SECRET
+
+CLIENT_URL=http://localhost:5173
+
+NODE_ENV=production
+```
+
+For the first deployment we temporarily keep:
+
+```env
+CLIENT_URL=http://localhost:5173
+```
+
+because we do not know the Vercel URL yet.
+
+We will update it later.
+
+---
+
+# 22. Deploy the Backend
+
+Click:
+
+```text
+Deploy
+```
+
+Render will:
+
+```text
+Clone repository
+        ↓
+Enter backend/
+        ↓
+npm install
+        ↓
+npm start
+        ↓
+node index.js
+```
+
+Watch the logs.
+
+You should eventually see something similar to:
+
+```text
+DB Connected
+Server Started at 10000
+```
+
+The actual port is controlled by Render.
+
+---
+
+# 23. Test the Render Backend
+
+Suppose Render gives:
+
+```text
+https://social-media-api.onrender.com
+```
+
+Visit:
+
+```text
+https://social-media-api.onrender.com/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "message": "Server is running"
+}
+```
+
+Save your Render URL.
+
+We will call it:
+
+```text
+BACKEND_URL
+```
+
+Example:
+
+```text
+BACKEND_URL=https://social-media-api.onrender.com
+```
+
+---
+
+# 24. Deploy the Frontend on Vercel
+
+Now go to Vercel.
+
+Choose:
+
+```text
+Add New
+→ Project
+```
+
+Import the same GitHub repository.
+
+---
+
+# 25. Configure the Vercel Root Directory
+
+Our frontend is not at the repository root.
+
+It exists at:
+
+```text
+frontend/vite-project/
+```
+
+Set:
+
+```text
+Root Directory
+frontend/vite-project
+```
+
+Vercel should detect:
+
+```text
+Framework Preset
+Vite
+```
+
+The build command should normally be:
+
+```bash
+npm run build
+```
+
+Output directory:
+
+```text
+dist
+```
+
+---
+
+# 26. Add the Vercel Environment Variable
+
+Before deploying, add:
+
+```env
+VITE_API_URL=https://YOUR-BACKEND.onrender.com
+```
+
+Example:
+
+```env
+VITE_API_URL=https://social-media-api.onrender.com
+```
+
+Do **not** use:
+
+```env
+VITE_API_URL=http://localhost:8084
+```
+
+in production.
+
+Also do not add:
+
+```text
+MongoDB URL
+JWT secret
+Cloudinary secret
+```
+
+to Vercel.
+
+Those are backend secrets.
+
+The frontend only needs the public backend URL.
+
+---
+
+# 27. Deploy the Frontend
+
+Click:
+
+```text
+Deploy
+```
+
+Vercel will:
+
+```text
+npm install
+     ↓
+npm run build
+     ↓
+generate dist/
+     ↓
+deploy static frontend
+```
+
+After deployment you will receive something similar to:
+
+```text
+https://social-media-app.vercel.app
+```
+
+Save this URL.
+
+We will call it:
+
+```text
+FRONTEND_URL
+```
+
+---
+
+# 28. Update Render with the Real Frontend URL
+
+Return to:
+
+```text
+Render
+→ Backend Service
+→ Environment
+```
+
+Change:
+
+```env
+CLIENT_URL=http://localhost:5173
+```
+
+to:
+
+```env
+CLIENT_URL=https://social-media-app.vercel.app
+```
+
+Use your actual Vercel production URL.
+
+Save the environment variable.
+
+Render will redeploy/restart the service.
+
+Now your backend allows requests from the deployed frontend.
+
+---
+
+# 29. The Complete Production Flow
+
+Your application should now work like this:
+
+```text
+Browser
+   │
+   ▼
+Vercel
+React Application
+   │
+   ├──────── REST API ──────────────┐
+   │                                │
+   └──────── Socket.IO ─────────────┤
+                                    ▼
+                               Render
+                           Express + Socket.IO
+                              │         │
+                              │         │
+                              ▼         ▼
+                         MongoDB     Cloudinary
+```
+
+---
+
+# 30. Test Authentication
+
+Open:
+
+```text
+https://YOUR-APP.vercel.app
+```
+
+Try:
+
+```text
+Register
+↓
+Login
+↓
+Home
+```
+
+Open browser Developer Tools.
+
+Check:
+
+```text
+Application
+→ Cookies
+```
+
+or the equivalent cookie storage panel in your browser.
+
+You should see a cookie named:
+
+```text
+token
+```
+
+The cookie should belong to the backend domain.
+
+Production cookie properties should include:
+
+```text
+HttpOnly
+Secure
+SameSite=None
+```
+
+---
+
+# 31. Test the Entire Application
+
+Do not consider the project deployed after only seeing the landing page.
+
+Test the complete application.
+
+### Authentication
+
+- Register
+- Login
+- Refresh page
+- Logout
+- Login again
+
+### Profile
+
+- Open own profile
+- Open another user's profile
+- Edit profile
+- Upload profile image
+- Follow user
+- Unfollow user
+
+### Feed
+
+- Create image post
+- Fetch posts
+- Like post
+- Comment on post
+
+### Reels
+
+- Upload reel
