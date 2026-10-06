@@ -10,6 +10,7 @@ import {
 } from "../redux/postsSlice";
 import { addReel, fetchReels, updateReelLike } from "../redux/reelsSlice";
 import { addStory, fetchStories } from "../redux/storiesSlice";
+import NotificationsPanel from "../components/NotificationsPanel";
 
 function Avatar({ initials, tone = "from-slate-700 to-slate-900", size = "h-11 w-11" }) {
   return (
@@ -519,10 +520,8 @@ function Home() {
                 <span className="text-lg">◉</span>
                 <span className="text-sm font-semibold">My Profile</span>
               </button>
-              <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50">
-                <span className="text-lg">♡</span>
-                <span className="text-sm font-semibold">Notifications</span>
-              </button>
+              {/* NOTIFICATION STEP 12: Mount the Redux-backed notification panel in the sidebar. */}
+              <NotificationsPanel />
               <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-slate-600 transition hover:bg-slate-50">
                 <span className="text-lg">⌁</span>
                 <span className="text-sm font-semibold">Explore</span>

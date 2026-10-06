@@ -7,6 +7,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
+import User from "./models/user.model.js";
 
 import userRoutes from "./routes/user.routes.js";
 import postRoutes from "./routes/post.routes.js";
@@ -14,6 +16,8 @@ import reelRoutes from "./routes/reel.routes.js";
 import commentRoutes from "./routes/comment.routes.js";
 import storyRoutes from "./routes/story.routes.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
+import notificationRoutes from "./routes/notification.routes.js";
+import { setIO } from "./socket.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,9 +43,6 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 const httpServer = createServer(app);
-
-
-
 const io = new Server(httpServer, {
     cors: {
         origin: "http://localhost:5173",
@@ -49,6 +50,55 @@ const io = new Server(httpServer, {
     }
 });
 const port = 8084;
+
+// Make this Socket.IO server available to notification helpers/controllers.
+setIO(io);
+
+// NOTIFICATION STEP 1: AUTHENTICATE SOCKETS AND PUT EACH USER IN A PRIVATE ROOM
+//
+// Socket.IO middleware runs before the "connection" event is allowed to fire.
+// We reuse the same httpOnly JWT cookie that protects our REST APIs, so the
+// client cannot simply claim to be another user by sending a random userId.
+io.use(async (socket, next) => {
+    try {
+        // The browser sends cookies in the initial Socket.IO handshake request.
+        // handshake.headers.cookie is the raw Cookie header string.
+        const rawCookie = socket.handshake.headers.cookie;
+
+        if (!rawCookie) {
+            return next(new Error("Authentication required"));
+        }
+
+        // cookie-parser is Express middleware, so it does not automatically run
+        // for Socket.IO. We therefore extract the existing "token" cookie here.
+        const tokenCookie = rawCookie
+            .split(";")
+            .map((cookie) => cookie.trim())
+            .find((cookie) => cookie.startsWith("token="));
+
+        if (!tokenCookie) {
+            return next(new Error("Authentication required"));
+        }
+
+        const token = decodeURIComponent(tokenCookie.split("=")[1]);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await User.findById(decoded.userId).select("-password");
+
+        if (!user) {
+            return next(new Error("User not found"));
+        }
+
+        // Attach the authenticated MongoDB user to this socket connection.
+        // From this point onward, socket.user is the trusted identity for
+        // whoever owns this connection.
+        socket.user = user;
+
+        next();
+    } catch (error) {
+        next(new Error("Invalid or expired token"));
+    }
+});
 
 mongoose.connect(process.env.dbURL)
     .then(() => {
@@ -61,7 +111,7 @@ mongoose.connect(process.env.dbURL)
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
-})); // this is for our express server
+}));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -71,41 +121,25 @@ app.use("/posts", postRoutes);
 app.use("/reels", reelRoutes);
 app.use("/comments", commentRoutes);
 app.use("/stories", storyRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.use(errorMiddleware);
 
 io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
+    console.log("Authenticated socket user:", socket.user.username, socket.user._id.toString());
 
-    // SOCKET.IO STEP 3: RECEIVE OUR FIRST CUSTOM EVENT
-  
-    
+    // Every active connection for this authenticated user joins the same room.
+    // This lets one notification reach all of the user's open tabs/devices.
+    const userRoom = `user:${socket.user._id.toString()}`;
+    socket.join(userRoom);
 
-
-
-
-    //
-    // "hello" is not a built-in Socket.IO event. We chose this event name.
-    // The client sends data with socket.emit("hello", data), and this listener
-    // receives that data on the server.
-    socket.on("hello", (message) => {
-        
-        console.log("Client says:", message);
-
-        // Send a custom event back only to the client that sent "hello".
-        // This demonstrates the basic Socket.IO pattern:
-        // emit -> network -> on
-        socket.emit("hello-response", "Hello from the server!");
-    });
+    console.log(`${socket.user.username} joined room: ${userRoom}`);
 
     socket.on("disconnect", () => {
         console.log("Socket disconnected:", socket.id);
     });
 });
-
-
-
-
 
 httpServer.listen(port, () => {
     console.log(`Server Started at ${port}`);

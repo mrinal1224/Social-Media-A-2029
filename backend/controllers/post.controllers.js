@@ -1,6 +1,9 @@
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
+import createNotification from "../utils/createNotification.js";
+
+// NOTIFICATION STEP 5B: Only a NEW like creates a notification; unlike does not.
 
 export const createPost = async (req, res, next) => {
     try {
@@ -109,6 +112,16 @@ export const togglePostLike = async (req, res, next) => {
         }
 
         await post.save();
+
+        // Unlike should not create a notification. Only a new like does.
+        if (!alreadyLiked) {
+            await createNotification({
+                recipient: post.author,
+                sender: userId,
+                type: "like",
+                post: post._id
+            });
+        }
 
         return res.status(200).json({
             message: alreadyLiked ? "Post unliked" : "Post liked",

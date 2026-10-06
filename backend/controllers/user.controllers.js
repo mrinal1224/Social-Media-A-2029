@@ -2,6 +2,9 @@ import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import generateToken from "../utils/generateToken.js";
 import uploadToCloudinary from "../utils/uploadToCloudinary.js";
+import createNotification from "../utils/createNotification.js";
+
+// NOTIFICATION STEP 5A: A successful follow creates a follow notification.
 
 const cookieOptions = {
     httpOnly: true,
@@ -135,6 +138,15 @@ export const followUser = async (req, res) => {
         if (targetUser.followers.some((id) => id.toString() === currentUserId.toString())) return res.status(409).json({ message: "You are already following this user" });
         await User.findByIdAndUpdate(currentUserId, { $addToSet: { followings: targetUserId } });
         await User.findByIdAndUpdate(targetUserId, { $addToSet: { followers: currentUserId } });
+
+        // Persist the follow notification and instantly deliver it if the
+        // followed user currently has an active socket connection.
+        await createNotification({
+            recipient: targetUserId,
+            sender: currentUserId,
+            type: "follow"
+        });
+
         return res.status(200).json({ message: "User followed" });
     } catch (error) {
         console.log(error);

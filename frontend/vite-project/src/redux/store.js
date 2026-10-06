@@ -4,6 +4,7 @@ import reelsReducer from "./reelsSlice";
 import profilesReducer from "./profilesSlice";
 import storiesReducer from "./storiesSlice";
 import authReducer from "./authSlice";
+import notificationsReducer from "./notificationsSlice";
 
 // Shared server state lives here. Pages do not own independent copies.
 // MongoDB remains persistent storage; each route hydrates the store on refresh.
@@ -14,5 +15,7 @@ export const store = configureStore({
     profiles: profilesReducer,
     stories: storiesReducer,
     auth: authReducer,
+    // NOTIFICATION STEP 9B: Register notification state in the application store.
+    notifications: notificationsReducer,
   },
 });

@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-// STEP 2: CREATE THE SOCKET.IO CLIENT
+// NOTIFICATION STEP 2: CREATE ONE SHARED SOCKET.IO CLIENT
 //
 // Backend side:
 //   new Server(httpServer)
@@ -18,7 +18,7 @@ const socket = io("http://localhost:8084", {
   // In the next teaching step React will explicitly decide when to call
   // socket.connect(). This makes the connection lifecycle easier to understand
   // and avoids hiding the moment when the realtime connection starts.
-  autoConnect: true,
+  autoConnect: false,
 
   // Allow credentials such as cookies to be sent during the Socket.IO connection.
   //

@@ -1,6 +1,9 @@
 import Reel from "../models/reel.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../utils/cloudinary.js";
+import createNotification from "../utils/createNotification.js";
+
+// NOTIFICATION STEP 5C: Only a NEW reel like creates a notification.
 
 const uploadVideoToCloudinary = (buffer) => {
     return new Promise((resolve, reject) => {
@@ -124,6 +127,15 @@ export const toggleReelLike = async (req, res, next) => {
         }
 
         await reel.save();
+
+        if (!alreadyLiked) {
+            await createNotification({
+                recipient: reel.author,
+                sender: userId,
+                type: "like",
+                reel: reel._id
+            });
+        }
 
         return res.status(200).json({
             message: alreadyLiked ? "Reel unliked" : "Reel liked",

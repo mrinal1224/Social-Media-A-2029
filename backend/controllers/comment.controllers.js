@@ -1,6 +1,9 @@
 import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
 import Reel from "../models/reel.model.js";
+import createNotification from "../utils/createNotification.js";
+
+// NOTIFICATION STEP 5D: A comment notifies the owner of the post/reel.
 
 const getFilter = (type, id) =>
     type === "post" ? { post: id } :
@@ -62,11 +65,12 @@ export const createComment = async (req, res, next) => {
             });
         }
 
-        const exists = type === "post"
-            ? await Post.exists({ _id: id })
-            : await Reel.exists({ _id: id });
+        // Fetch the content because its author is the notification recipient.
+        const content = type === "post"
+            ? await Post.findById(id)
+            : await Reel.findById(id);
 
-        if (!exists) {
+        if (!content) {
             return res.status(404).json({
                 message: "Content not found"
             });
@@ -80,6 +84,15 @@ export const createComment = async (req, res, next) => {
 
         const populatedComment = await Comment.findById(comment._id)
             .populate("user", "name username profileImage");
+
+        await createNotification({
+            recipient: content.author,
+            sender: req.user._id,
+            type: "comment",
+            post: type === "post" ? id : undefined,
+            reel: type === "reel" ? id : undefined,
+            comment: comment._id
+        });
 
         return res.status(201).json({
             message: "Comment added successfully",
