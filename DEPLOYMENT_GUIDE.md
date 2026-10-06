@@ -1883,4 +1883,260 @@ Data persists
 Media uploads
         ↓
 Protected APIs work
-       
+        ↓
+Socket.IO connects
+        ↓
+Real-time notification works
+```
+
+That is an actual deployed full-stack application.
+
+---
+
+# 49. Deployment Checklist
+
+Before submitting, verify every item.
+
+## GitHub
+
+- [ ] Latest code pushed
+- [ ] `.env` not committed
+- [ ] `node_modules` not committed
+- [ ] `dist` not required in Git
+- [ ] README exists
+
+## MongoDB Atlas
+
+- [ ] Free cluster created
+- [ ] Database user created
+- [ ] Network access configured
+- [ ] Correct connection string copied
+- [ ] Database name included
+
+## Cloudinary
+
+- [ ] Account created
+- [ ] Cloud name copied
+- [ ] API key copied
+- [ ] API secret copied
+- [ ] Secrets stored only on backend
+
+## Backend
+
+- [ ] `npm start` works
+- [ ] Dynamic `PORT`
+- [ ] `CLIENT_URL`
+- [ ] Production CORS
+- [ ] Socket.IO CORS
+- [ ] Production cookie settings
+- [ ] `/health` endpoint
+- [ ] Render deployment successful
+
+## Frontend
+
+- [ ] `VITE_API_URL`
+- [ ] Axios no longer hardcoded to localhost
+- [ ] Socket.IO no longer hardcoded to localhost
+- [ ] `vercel.json` added
+- [ ] Vercel deployment successful
+
+## Testing
+
+- [ ] Register
+- [ ] Login
+- [ ] Logout
+- [ ] Refresh authentication
+- [ ] Profile
+- [ ] Profile image upload
+- [ ] Create post
+- [ ] Create reel
+- [ ] Create story
+- [ ] Like
+- [ ] Comment
+- [ ] Follow/unfollow
+- [ ] Notifications fetched
+- [ ] Real-time Socket.IO notification
+- [ ] Refresh `/home`
+- [ ] Refresh `/profile/:username`
+
+---
+
+# 50. Quick Deployment Summary
+
+If you already understand everything above, the complete process is:
+
+```text
+1. Push project to GitHub
+        ↓
+2. Replace hardcoded localhost URLs with environment variables
+        ↓
+3. Add dynamic process.env.PORT
+        ↓
+4. Add production CORS
+        ↓
+5. Add production cookie settings
+        ↓
+6. Create MongoDB Atlas database
+        ↓
+7. Create Cloudinary account
+        ↓
+8. Deploy backend on Render
+        ↓
+9. Copy Render backend URL
+        ↓
+10. Set VITE_API_URL
+        ↓
+11. Deploy frontend on Vercel
+        ↓
+12. Copy Vercel frontend URL
+        ↓
+13. Update Render CLIENT_URL
+        ↓
+14. Redeploy/restart backend
+        ↓
+15. Test complete application
+        ↓
+16. Test Socket.IO with two users
+```
+
+---
+
+# 51. Reference Production Code
+
+A simplified production-ready backend setup should resemble:
+
+```js
+import express from "express";
+import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
+
+const app = express();
+const httpServer = createServer(app);
+
+const port = process.env.PORT || 8084;
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.CLIENT_URL
+].filter(Boolean);
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+
+const io = new Server(httpServer, {
+    cors: {
+        origin: allowedOrigins,
+        credentials: true
+    }
+});
+
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        message: "Server is running"
+    });
+});
+
+// routes...
+// socket authentication...
+// socket connection...
+// error middleware...
+
+httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`Server Started at ${port}`);
+});
+```
+
+Do not blindly replace your complete `index.js` with this snippet.
+
+Use it to understand the deployment-specific pieces:
+
+```text
+process.env.PORT
+CLIENT_URL
+CORS
+Socket.IO CORS
+health route
+```
+
+Your existing routes, MongoDB connection, Socket authentication, notification rooms, and middleware should remain.
+
+---
+
+# 52. Final Architecture
+
+When everything is complete:
+
+```text
+                     ┌─────────────────────┐
+                     │       GitHub        │
+                     │     Source Code     │
+                     └──────────┬──────────┘
+                                │
+                    ┌───────────┴────────────┐
+                    │                        │
+                    ▼                        ▼
+          ┌──────────────────┐      ┌──────────────────┐
+          │      Vercel      │      │      Render      │
+          │   React + Vite   │◄────►│ Express + Socket│
+          │      Redux       │      │       .IO        │
+          └──────────────────┘      └────────┬─────────┘
+                                             │
+                                    ┌────────┴─────────┐
+                                    │                  │
+                                    ▼                  ▼
+                           ┌────────────────┐  ┌────────────────┐
+                           │ MongoDB Atlas  │  │   Cloudinary   │
+                           │     Data       │  │  Media Files   │
+                           └────────────────┘  └────────────────┘
+```
+
+For a student project, the target cost can remain:
+
+```text
+GitHub          ₹0
+Vercel          ₹0
+Render          ₹0
+MongoDB Atlas   ₹0
+Cloudinary      ₹0
+------------------
+Total           ₹0
+```
+
+subject to each platform's current free-tier limits.
+
+---
+
+# 53. Official Documentation
+
+Platform interfaces and free-tier limits can change, so always check the current official documentation if a dashboard looks different from screenshots/tutorials.
+
+- Render — Node/Express deployment documentation
+- Render — WebSocket documentation
+- Render — Free web service documentation
+- Vercel — Vite deployment documentation
+- Vercel — Environment variable documentation
+- MongoDB Atlas — Connection and Network Access documentation
+- Cloudinary — Node.js SDK documentation
+
+---
+
+## Final Rule
+
+> **If your deployed frontend still contains `localhost`, the deployment is not finished.**
+
+A production deployment should communicate entirely using cloud URLs and environment variables.
+
+Good luck, and test your project **before** the evaluation day — not five minutes before your demo.
