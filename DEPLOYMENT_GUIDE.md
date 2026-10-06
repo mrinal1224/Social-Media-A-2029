@@ -1243,3 +1243,644 @@ Test the complete application.
 ### Reels
 
 - Upload reel
+- Fetch reel
+- Like/comment if supported
+
+### Stories
+
+- Upload story
+- Fetch stories
+
+### Notifications
+
+Use two accounts.
+
+For example:
+
+```text
+Browser 1
+User A
+```
+
+and:
+
+```text
+Incognito / Browser 2
+User B
+```
+
+Now:
+
+```text
+User A follows User B
+```
+
+User B should receive the real-time notification.
+
+This confirms:
+
+```text
+MongoDB persistence
++
+REST APIs
++
+JWT authentication
++
+Socket.IO connection
++
+Socket room
++
+real-time notification delivery
+```
+
+are all working.
+
+---
+
+# 32. Test React Router Properly
+
+Do not only navigate using buttons.
+
+Manually open:
+
+```text
+https://YOUR-APP.vercel.app/home
+```
+
+and:
+
+```text
+https://YOUR-APP.vercel.app/profile/YOUR_USERNAME
+```
+
+Then refresh the browser.
+
+If you receive a Vercel `404`, verify:
+
+```text
+frontend/vite-project/vercel.json
+```
+
+contains:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+Then push the file and redeploy.
+
+---
+
+# 33. Render Free Tier Behaviour
+
+Render free web services may sleep after a period without inbound traffic.
+
+Therefore the first request after inactivity may take noticeably longer.
+
+This is normal for a student/demo deployment.
+
+Example:
+
+```text
+First request after inactivity
+        ↓
+Render wakes service
+        ↓
+request may take longer
+
+Later requests
+        ↓
+fast again
+```
+
+Do not immediately assume:
+
+```text
+"Backend is broken"
+```
+
+if the first request takes time.
+
+---
+
+# 34. Socket.IO on Render
+
+Render supports WebSocket connections.
+
+Your application already correctly creates Socket.IO on top of the same HTTP server:
+
+```js
+const app = express();
+
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+    cors: {
+        origin: allowedOrigins,
+        credentials: true
+    }
+});
+
+httpServer.listen(port);
+```
+
+Do **not** do this:
+
+```js
+app.listen(...);
+httpServer.listen(...);
+```
+
+You only want the HTTP server containing both:
+
+```text
+Express
++
+Socket.IO
+```
+
+to listen publicly.
+
+---
+
+# 35. Common Error: CORS
+
+You may see:
+
+```text
+Access to XMLHttpRequest has been blocked by CORS policy
+```
+
+Check Render:
+
+```env
+CLIENT_URL=https://your-project.vercel.app
+```
+
+The value must match the frontend origin exactly.
+
+Good:
+
+```text
+https://social-media.vercel.app
+```
+
+Potentially wrong:
+
+```text
+http://social-media.vercel.app
+```
+
+or a completely different Vercel preview URL.
+
+Also ensure:
+
+```js
+credentials: true
+```
+
+exists in both Express CORS and Socket.IO CORS.
+
+---
+
+# 36. Common Error: Login Works Locally but Not in Production
+
+Symptoms:
+
+```text
+Login API returns 200
+but
+/users/me returns 401
+```
+
+or:
+
+```text
+User gets logged out after refresh
+```
+
+Check the cookie configuration.
+
+Production should use:
+
+```js
+sameSite: "none",
+secure: true
+```
+
+Axios must use:
+
+```js
+withCredentials: true
+```
+
+Socket.IO should also use:
+
+```js
+withCredentials: true
+```
+
+The backend CORS configuration must use:
+
+```js
+credentials: true
+```
+
+---
+
+# 37. Browser Privacy / Third-Party Cookie Note
+
+Because:
+
+```text
+Frontend → vercel.app
+Backend  → onrender.com
+```
+
+the authentication cookie is cross-site.
+
+Some browsers or strict privacy settings may block third-party/cross-site cookies.
+
+If:
+
+```text
+Login API succeeds
+but cookie never appears
+```
+
+inspect the browser privacy/cookie settings.
+
+For a classroom project, students can allow cookies for their deployed project while testing.
+
+For a larger production system, a same-site/custom-domain architecture is preferable.
+
+Do not move JWTs from secure `httpOnly` cookies into `localStorage` only to avoid understanding the cookie issue.
+
+---
+
+# 38. Common Error: MongoDB Does Not Connect
+
+Render logs may show:
+
+```text
+MongoServerSelectionError
+```
+
+Check:
+
+### 1. Connection string
+
+```env
+dbURL=mongodb+srv://...
+```
+
+### 2. Database username
+
+Make sure you created a MongoDB **database user**, not only an Atlas account.
+
+### 3. Password
+
+Verify the password is correct.
+
+### 4. Network Access
+
+For the classroom setup check whether:
+
+```text
+0.0.0.0/0
+```
+
+has been allowed.
+
+### 5. Special characters
+
+A password containing reserved URL characters may require URL encoding.
+
+---
+
+# 39. Common Error: Cloudinary Upload Fails
+
+Check Render environment variables:
+
+```env
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+Do not add quotes unless the value actually requires them.
+
+Wrong:
+
+```env
+CLOUDINARY_API_KEY="123456789"
+```
+
+Prefer:
+
+```env
+CLOUDINARY_API_KEY=123456789
+```
+
+Check the Render logs for the actual Cloudinary error.
+
+---
+
+# 40. Common Error: Render Says No Open Port
+
+If Render reports that it cannot detect an open port, verify:
+
+```js
+const port = process.env.PORT || 8084;
+```
+
+and:
+
+```js
+httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`Server Started at ${port}`);
+});
+```
+
+Do not deploy with only:
+
+```js
+const port = 8084;
+```
+
+---
+
+# 41. Common Error: `npm start` Fails on Render
+
+If the log says:
+
+```text
+Missing script: "start"
+```
+
+open:
+
+```text
+backend/package.json
+```
+
+and add:
+
+```json
+"scripts": {
+  "start": "node index.js"
+}
+```
+
+Push again:
+
+```bash
+git add .
+git commit -m "Add backend production start script"
+git push
+```
+
+Render can automatically redeploy from the latest commit.
+
+---
+
+# 42. Common Error: Vercel Still Calls Localhost
+
+Open browser Developer Tools:
+
+```text
+Network
+```
+
+If requests are going to:
+
+```text
+http://localhost:8084
+```
+
+your Vercel environment variable is missing or incorrect.
+
+Add:
+
+```env
+VITE_API_URL=https://YOUR-BACKEND.onrender.com
+```
+
+Then **redeploy the frontend**.
+
+Vite environment variables are included during the build.
+
+Changing the environment variable does not magically modify an already-built deployment.
+
+---
+
+# 43. Common Error: Socket.IO Connection Fails
+
+Open:
+
+```text
+Developer Tools
+→ Console
+```
+
+Check the backend URL.
+
+The Socket.IO client must use:
+
+```js
+const socket = io(API_URL, {
+    autoConnect: false,
+    withCredentials: true
+});
+```
+
+Then check:
+
+```text
+Render Logs
+```
+
+When an authenticated user connects, your backend should log something similar to:
+
+```text
+Socket connected: abc123
+Authenticated socket user: username 123456...
+username joined room: user:123456...
+```
+
+If you see:
+
+```text
+Authentication required
+```
+
+the Socket.IO handshake did not receive the JWT cookie.
+
+Check:
+
+```text
+cookie settings
+CORS
+withCredentials
+browser cookie/privacy settings
+```
+
+---
+
+# 44. Environment Variable Checklist
+
+## Render / Backend
+
+```env
+dbURL=
+JWT_SECRET=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+CLIENT_URL=https://YOUR-FRONTEND.vercel.app
+
+NODE_ENV=production
+```
+
+Render provides:
+
+```env
+PORT
+```
+
+automatically.
+
+Do not manually depend on port `8084` in production.
+
+---
+
+## Vercel / Frontend
+
+```env
+VITE_API_URL=https://YOUR-BACKEND.onrender.com
+```
+
+That is normally all the frontend needs.
+
+---
+
+# 45. Secrets vs Public Environment Variables
+
+Not every environment variable is a secret.
+
+## Backend secrets
+
+These must never appear in frontend code:
+
+```text
+dbURL
+JWT_SECRET
+CLOUDINARY_API_SECRET
+```
+
+## Public frontend configuration
+
+This is safe to expose:
+
+```text
+VITE_API_URL
+```
+
+Why?
+
+Because anyone using the website can already see the backend API domain in browser network requests.
+
+---
+
+# 46. Updating the Project After Deployment
+
+One major advantage of Git-based deployment is that future updates are easy.
+
+Typical workflow:
+
+```bash
+git add .
+git commit -m "Add feature"
+git push origin main
+```
+
+Then:
+
+```text
+GitHub receives new commit
+        ↓
+Render redeploys backend
+        ↓
+Vercel rebuilds frontend
+```
+
+depending on which files changed and your provider configuration.
+
+---
+
+# 47. Recommended Submission Format
+
+Students should submit:
+
+```text
+GitHub Repository:
+https://github.com/USERNAME/PROJECT
+
+Live Frontend:
+https://PROJECT.vercel.app
+
+Backend API:
+https://PROJECT.onrender.com
+```
+
+Optional:
+
+```text
+Demo Credentials:
+
+Email:
+demo@example.com
+
+Password:
+DemoPassword123
+```
+
+Do **not** submit real personal passwords.
+
+---
+
+# 48. What Should Be Demonstrated During Evaluation?
+
+A deployed MERN project should prove more than:
+
+```text
+"The page opens."
+```
+
+Students should be able to demonstrate:
+
+```text
+Frontend deployed
+        ↓
+Frontend calls deployed backend
+        ↓
+Backend connects to cloud database
+        ↓
+Authentication works
+        ↓
+Data persists
+        ↓
+Media uploads
+        ↓
+Protected APIs work
+       
